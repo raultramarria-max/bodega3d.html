@@ -66,6 +66,24 @@ header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;background:v
 .m-acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .m-info{font-size:12.5px;color:var(--muted)}
 .fill-note{font-size:11.5px;color:var(--accent)}
+.ac-list{border:1px solid var(--accent);border-radius:6px;background:var(--surface);max-height:260px;overflow-y:auto;
+  box-shadow:0 6px 18px rgba(0,0,0,.14);-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.ac-item{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);
+  padding:10px 12px;cursor:pointer;color:var(--ink);min-height:48px;align-items:center}
+.ac-item:last-child{border-bottom:0}
+.ac-item .s{font:500 13px var(--mono);color:var(--accent)}
+.ac-item .d{font-size:14px;line-height:1.3;min-width:0;overflow-wrap:anywhere}
+.ac-item.act,.ac-item:active{background:color-mix(in srgb,var(--accent) 14%,var(--surface))}
+.ac-item mark{background:color-mix(in srgb,var(--occ) 45%,transparent);color:inherit;border-radius:2px}
+.ac-msg{padding:10px 12px;font-size:13px;color:var(--muted)}
+.resp-box{border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:10px}
+.resp-box h3{margin:0;font:700 15px var(--display);text-transform:uppercase;letter-spacing:.03em}
+.r-row{display:flex;gap:8px;flex-wrap:wrap}
+.r-row .btn{flex:1 1 180px}
+.r-mode{border:0;padding:0;margin:0;display:grid;gap:8px}
+.r-mode legend{font-size:12px;color:var(--muted);padding:0;margin-bottom:6px}
+.radio{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink)}
+.radio input{width:auto;margin-top:3px}
 @media (max-width:500px){.f3{grid-template-columns:1fr}}
 .search input{flex:1;min-width:0;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:7px 10px}
 .btn{border:1px solid var(--line);background:var(--surface-2);border-radius:6px;padding:7px 12px;cursor:pointer;white-space:nowrap}
@@ -202,6 +220,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <div class="search">
       <input id="q" type="search" placeholder="Buscar SKU, producto o lote" autocomplete="off">
       <button class="btn" id="btnMaestro" type="button">Maestro SKU <span id="mCount" class="count"></span></button>
+      <button class="btn" id="btnResp" type="button">Respaldo</button>
       <button class="btn" id="btnCsv" type="button">Exportar CSV</button>
     </div>
   </header>
@@ -240,12 +259,12 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <form id="form" novalidate>
       <h3 id="fTitle">Ingresar producto</h3>
       <div class="f2">
-        <label for="fSku">SKU<input id="fSku" required list="dlSku" autocomplete="off"></label>
+        <label for="fSku">SKU<input id="fSku" required autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="search" role="combobox" aria-autocomplete="list" aria-controls="acList" aria-expanded="false"></label>
         <label for="fLote">Lote<input id="fLote"></label>
       </div>
-      <label for="fDesc">Descripción<input id="fDesc" required list="dlDesc" autocomplete="off" placeholder="Escribe parte del nombre"></label>
+      <label for="fDesc">Descripción<input id="fDesc" required autocomplete="off" spellcheck="false" placeholder="Toca y escribe parte del nombre" role="combobox" aria-autocomplete="list" aria-controls="acList" aria-expanded="false"></label>
+      <div class="ac-list" id="acList" role="listbox" hidden></div>
       <div class="fill-note" id="fillNote" hidden></div>
-      <datalist id="dlSku"></datalist><datalist id="dlDesc"></datalist>
       <div class="f2">
         <label for="fCant">Cantidad<input id="fCant" type="number" step="any" min="0" required></label>
         <label for="fUnd">Unidad
@@ -266,6 +285,43 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   </div>
 </aside>
 <div class="toast" id="toast" hidden></div>
+
+<div class="modal" id="rModal" hidden role="dialog" aria-modal="true" aria-labelledby="rTitle">
+  <div class="modal-card">
+    <h2 id="rTitle">Respaldo de datos</h2>
+    <p>Pasa la información entre celulares con un archivo. Descárgalo o compártelo en un equipo y cárgalo en el otro.</p>
+    <div class="resp-box">
+      <h3>Enviar desde este equipo</h3>
+      <div class="m-info" id="rSummary"></div>
+      <div class="r-row">
+        <button class="btn primary" type="button" id="rShare" hidden>Compartir (WhatsApp, correo…)</button>
+        <button class="btn" type="button" id="rDown">Descargar archivo .json</button>
+      </div>
+    </div>
+    <div class="resp-box">
+      <h3>Recibir en este equipo</h3>
+      <label class="drop" for="rFile">Toca para elegir el archivo de respaldo (.json)
+        <input id="rFile" type="file" accept=".json,application/json" hidden>
+      </label>
+      <div id="rPreview" hidden style="display:grid;gap:10px">
+        <div class="m-info" id="rInfo"></div>
+        <fieldset class="r-mode">
+          <legend>Cómo cargarlo</legend>
+          <label class="radio" for="rMerge"><input type="radio" name="rMode" id="rMerge" value="merge" checked>
+            <span><b>Combinar</b> · en cada ubicación queda el dato más reciente. Úsalo para juntar lo de varios celulares.</span></label>
+          <label class="radio" for="rReplace"><input type="radio" name="rMode" id="rReplace" value="replace">
+            <span><b>Reemplazar todo</b> · este equipo queda igual al archivo. Lo que no esté en el archivo se borra.</span></label>
+        </fieldset>
+        <label class="radio" for="rMaster"><input type="checkbox" id="rMaster" checked> <span id="rMasterTxt">Actualizar también el maestro de SKU</span></label>
+      </div>
+    </div>
+    <div class="err" id="rErr" hidden></div>
+    <div class="m-acts">
+      <button class="btn" type="button" id="rClose">Cerrar</button>
+      <button class="btn primary" type="button" id="rApply" hidden>Cargar respaldo</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal" id="mModal" hidden role="dialog" aria-modal="true" aria-labelledby="mTitle">
   <div class="modal-card">
@@ -1442,7 +1498,11 @@ function localAdapter(){
       cb();
     },
     async save(code, body){
-      if(body) data.set(code, body); else data.delete(code);
+      return this.saveMany({[code]:body});
+    },
+    async saveMany(map, replaceAll){
+      if(replaceAll) data.clear();
+      Object.entries(map).forEach(([k,v])=>{ if(v) data.set(k,v); else data.delete(k); });
       try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(Object.fromEntries(data))); }catch(e){ throw {message:'No se pudo guardar en este navegador.'}; }
       onDataChanged();
     },
@@ -1492,6 +1552,11 @@ function dbAdapter(db){
     async save(code, body){
       const ref = col.doc(code);
       if(body) await ref.set(body); else await ref.delete();
+    },
+    async saveMany(map, replaceAll){
+      const entries = Object.entries(map);
+      if(replaceAll) [...data.keys()].forEach(k=>{ if(!(k in map)) entries.push([k,null]); });
+      for(const [k,v] of entries){ const ref=col.doc(k); if(v) await ref.set(v); else await ref.delete(); }
     }
   };
 }
@@ -1844,7 +1909,7 @@ function renderDrawer(){
   }
 }
 function resetForm(){
-  form.reset(); fErr.hidden=true; fillNote.hidden=true; fCancel.hidden=true; editIdx=-1;
+  form.reset(); fErr.hidden=true; fillNote.hidden=true; fCancel.hidden=true; editIdx=-1; closeAC();
   const n = selected ? (data.get(selected)?.items||[]).length : 0;
   fTitle.textContent = n ? `Agregar otro producto (ya hay ${n})` : 'Ingresar producto';
   fSave.textContent = n ? 'Agregar a esta ubicación' : 'Guardar en esta ubicación';
@@ -1878,7 +1943,8 @@ async function removeItem(i){
 }
 async function persist(code, items, msg){
   const s=SLOT_BY_CODE.get(code);
-  const body = items.length ? {codigo:code, fila:s.fila, pos:s.pos, nivel:s.nivel, prof:s.lbl, items, actualizado:new Date().toISOString()} : null;
+  // una ubicación vaciada se guarda con lista vacía y fecha, para que al combinar respaldos la salida no se pierda
+  const body = {codigo:code, fila:s.fila, pos:s.pos, nivel:s.nivel, prof:s.lbl, items, actualizado:new Date().toISOString()};
   fSave.disabled=true;
   try{ await store.save(code, body); toast(msg); }
   catch(err){
@@ -1958,17 +2024,12 @@ renderElev(); updateStats(); paintSlots();
 /* ===================== MAESTRO DE SKU ===================== */
 const master = new Map();   // sku -> {d, u}
 const byDesc = new Map();   // descripción en mayúsculas -> sku
-let masterMeta = null;
+let masterMeta = null, masterRows = [];
 function setMaster(rows, meta){
-  master.clear(); byDesc.clear(); masterMeta = meta;
+  master.clear(); byDesc.clear(); masterMeta = meta; masterRows = rows || [];
   (rows||[]).forEach(([s,d,u])=>{ master.set(String(s), {d, u}); byDesc.set(String(d).toUpperCase(), String(s)); });
   mCount.textContent = master.size ? master.size.toLocaleString('es-CL') : '';
-  const frag1=document.createDocumentFragment(), frag2=document.createDocumentFragment();
-  master.forEach((v,s)=>{
-    const o1=document.createElement('option'); o1.value=s; o1.label=v.d; frag1.appendChild(o1);
-    const o2=document.createElement('option'); o2.value=v.d; o2.label=s; frag2.appendChild(o2);
-  });
-  dlSku.replaceChildren(frag1); dlDesc.replaceChildren(frag2);
+  masterIndex = [...master.entries()].map(([s,v])=>({s, d:v.d, k:norm(s+' '+v.d)})).sort((a,b)=>a.d.localeCompare(b.d,'es'));
   renderMasterState();
 }
 const UNITS = ['KG','UN','CAJAS','SACOS','LT','PALLET'];
@@ -1993,8 +2054,80 @@ function fillFrom(sku){
   fillNote.textContent='Completado desde el maestro de SKU'; fillNote.hidden=false;
   return true;
 }
-fSku.addEventListener('input',()=>{ fillNote.hidden=true; const s=fSku.value.trim(); if(master.has(s)) fillFrom(s); });
+fSku.addEventListener('input',()=>{ fillNote.hidden=true; const s=fSku.value.trim(); if(master.has(s)) { fillFrom(s); closeAC(); } });
 fDesc.addEventListener('input',()=>{ fillNote.hidden=true; const s=byDesc.get(fDesc.value.trim().toUpperCase()); if(s) fillFrom(s); });
+
+/* --- lista desplegable propia (el datalist nativo falla en Android) --- */
+let masterIndex = [];
+function norm(t){ return String(t).normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase(); }
+let acInput=null, acRows=[], acAct=-1;
+function placeAC(input){
+  const lab=input.closest('label'); const anchor = lab.parentElement.classList.contains('f2') ? lab.parentElement : lab;
+  if(anchor.nextElementSibling!==acList) anchor.after(acList);
+}
+function openAC(input){
+  acInput=input; placeAC(input); renderAC();
+  acList.hidden=false; input.setAttribute('aria-expanded','true');
+  // en celular el teclado tapa la mitad de abajo: subir el campo para que la lista quede visible
+  if(matchMedia('(max-width:700px)').matches) setTimeout(()=>input.scrollIntoView({block:'start',behavior:'smooth'}),250);
+}
+function closeAC(){ acList.hidden=true; acInput?.setAttribute('aria-expanded','false'); acInput=null; acAct=-1; }
+function hl(text, words){
+  const frag=document.createDocumentFragment(); const n=norm(text);
+  // marca la primera aparición de cada palabra buscada
+  const marks=[]; words.forEach(w=>{ const i=n.indexOf(w); if(i>=0) marks.push([i,i+w.length]); });
+  marks.sort((a,b)=>a[0]-b[0]); let pos=0;
+  marks.forEach(([a,b])=>{ if(a<pos) return; frag.append(text.slice(pos,a)); const m=document.createElement('mark'); m.textContent=text.slice(a,b); frag.append(m); pos=b; });
+  frag.append(text.slice(pos)); return frag;
+}
+function renderAC(){
+  acList.replaceChildren();
+  if(!masterIndex.length){
+    const m=document.createElement('div'); m.className='ac-msg'; m.textContent='No hay maestro de SKU cargado. Cárgalo con el botón "Maestro SKU" para ver la lista de productos.'; acList.append(m); acRows=[]; return;
+  }
+  const q=norm(acInput.value.trim()), words=q.split(/\s+/).filter(Boolean);
+  let rows = words.length ? masterIndex.filter(r=>words.every(w=>r.k.includes(w))) : masterIndex;
+  if(words.length){
+    const rank=r=> r.s.startsWith(q)?0 : norm(r.d).startsWith(q)?1 : 2;
+    rows = rows.slice().sort((a,b)=>rank(a)-rank(b));
+  }
+  const total=rows.length; acRows=rows.slice(0,50); acAct=-1;
+  if(!total){ const m=document.createElement('div'); m.className='ac-msg'; m.textContent='Ningún producto coincide. Puedes escribirlo a mano.'; acList.append(m); return; }
+  acRows.forEach((r,i)=>{
+    const b=document.createElement('button'); b.type='button'; b.className='ac-item'; b.setAttribute('role','option'); b.id='ac'+i;
+    const s=document.createElement('span'); s.className='s'; s.append(hl(r.s,words));
+    const d=document.createElement('span'); d.className='d'; d.append(hl(r.d,words));
+    b.append(s,d);
+    // pointerdown evita que el input pierda el foco antes de elegir
+    b.addEventListener('pointerdown',e=>e.preventDefault());
+    b.addEventListener('click',()=>pickAC(i));
+    acList.append(b);
+  });
+  if(total>acRows.length){ const m=document.createElement('div'); m.className='ac-msg'; m.textContent=`Mostrando 50 de ${total.toLocaleString('es-CL')}. Escribe más letras para acotar.`; acList.append(m); }
+}
+function pickAC(i){
+  const r=acRows[i]; if(!r) return;
+  fillFrom(r.s); closeAC(); fLote.focus();
+}
+function moveAC(d){
+  if(!acRows.length) return;
+  acAct=(acAct+d+acRows.length)%acRows.length;
+  acList.querySelectorAll('.ac-item').forEach((el,i)=>el.classList.toggle('act',i===acAct));
+  const el=document.getElementById('ac'+acAct); el?.scrollIntoView({block:'nearest'}); acInput?.setAttribute('aria-activedescendant','ac'+acAct);
+}
+[fSku,fDesc].forEach(inp=>{
+  inp.addEventListener('focus',()=>openAC(inp));
+  inp.addEventListener('click',()=>{ if(acList.hidden) openAC(inp); });
+  inp.addEventListener('input',()=>{ if(document.activeElement===inp && !(inp===fSku && master.has(inp.value.trim()))){ if(acList.hidden) openAC(inp); else renderAC(); } });
+  inp.addEventListener('blur',()=>setTimeout(()=>{ if(document.activeElement!==fSku && document.activeElement!==fDesc) closeAC(); },150));
+  inp.addEventListener('keydown',e=>{
+    if(acList.hidden) return;
+    if(e.key==='ArrowDown'){ e.preventDefault(); moveAC(1); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); moveAC(-1); }
+    else if(e.key==='Enter' && acAct>=0){ e.preventDefault(); pickAC(acAct); }
+    else if(e.key==='Escape'){ e.stopPropagation(); closeAC(); }
+  });
+});
 fSku.addEventListener('change',()=>{ const s=fSku.value.trim(); if(s && master.size && !master.has(s)){ fillNote.textContent='Este SKU no está en el maestro; escribe la descripción a mano.'; fillNote.hidden=false; } });
 
 // --- carga del archivo
@@ -2107,6 +2240,87 @@ mLoad.onclick=async ()=>{
   }catch(e){
     showMErr(e?.code==='invalid_argument' ? 'No tienes permiso para cargar el maestro en esta página.' : (e?.message || 'No se pudo guardar el maestro. Intenta de nuevo.'));
   }finally{ mLoad.disabled=false; mLoad.textContent='Cargar maestro'; }
+};
+
+/* ===================== RESPALDO JSON ===================== */
+const APP_ID = 'bodega3d-quinta';
+const stamp = () => { const d=new Date(), p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`; };
+function buildBackup(){
+  return {app:APP_ID, version:1, exportado:new Date().toISOString(),
+    ubicaciones:Object.fromEntries([...data.entries()].filter(([k])=>SLOT_BY_CODE.has(k))),
+    maestro: masterRows.length ? {rows:masterRows, meta:masterMeta} : null};
+}
+async function saveFile(filename, blob){
+  if(downloads){ try{ await downloads.save({filename, data:blob}); return true; }catch(e){ return false; } }
+  try{ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000); return true; }
+  catch(e){ toast('La descarga no está disponible aquí.'); return false; }
+}
+function backupFile(){
+  const json=JSON.stringify(buildBackup());
+  const name=`bodega_respaldo_${stamp()}.json`;
+  return {name, blob:new Blob([json],{type:'application/json'}), file:(()=>{ try{ return new File([json],name,{type:'application/json'}); }catch(e){ return null; } })()};
+}
+function renderBackupSummary(){
+  let occ=0; data.forEach(v=>{ if(v.items?.length) occ++; });
+  rSummary.textContent = `${occ} ubicaciones ocupadas · ${master.size.toLocaleString('es-CL')} SKU en el maestro.`;
+  const f = backupFile().file;
+  rShare.hidden = !(f && navigator.canShare && (()=>{ try{ return navigator.canShare({files:[f]}); }catch(e){ return false; } })());
+}
+btnResp.onclick=()=>{ renderBackupSummary(); rErr.hidden=true; rPreview.hidden=true; rApply.hidden=true; pending=null; rModal.hidden=false; };
+rClose.onclick=()=>{ rModal.hidden=true; };
+rModal.addEventListener('click',e=>{ if(e.target===rModal) rModal.hidden=true; });
+addEventListener('keydown',e=>{ if(e.key==='Escape' && !rModal.hidden) rModal.hidden=true; });
+rDown.onclick=async ()=>{ const b=backupFile(); if(await saveFile(b.name,b.blob)) toast('Respaldo descargado'); };
+rShare.onclick=async ()=>{
+  const b=backupFile();
+  try{ await navigator.share({files:[b.file], title:'Respaldo Bodega 3D', text:`Respaldo bodega ${stamp().replace('_',' ')}`}); }
+  catch(e){ if(e && e.name!=='AbortError') toast('No se pudo compartir; usa Descargar.'); }
+};
+
+let pending=null;
+const newer=(a,b)=> String(a?.actualizado||'') > String(b?.actualizado||'');
+rFile.addEventListener('change',()=>{
+  const f=rFile.files[0]; rFile.value=''; if(!f) return;
+  rErr.hidden=true;
+  const r=new FileReader();
+  r.onload=()=>{
+    let j; try{ j=JSON.parse(r.result); }catch(e){ return showRErr('El archivo no es un respaldo válido (no se pudo leer el JSON).'); }
+    if(!j || j.app!==APP_ID || typeof j.ubicaciones!=='object'){ return showRErr('Este archivo no es un respaldo de Bodega 3D.'); }
+    // solo ubicaciones que existen en esta bodega y con forma correcta
+    const ubic={}; let skipped=0;
+    Object.entries(j.ubicaciones).forEach(([k,v])=>{
+      if(SLOT_BY_CODE.has(k) && v && Array.isArray(v.items)) ubic[k]=v; else skipped++;
+    });
+    let nuevas=0, iguales=0, viejas=0;
+    Object.entries(ubic).forEach(([k,v])=>{ const cur=data.get(k); if(!cur || newer(v,cur)) nuevas++; else if(newer(cur,v)) viejas++; else iguales++; });
+    const fecha=new Date(j.exportado).toLocaleString('es-CL',{dateStyle:'short',timeStyle:'short'});
+    rInfo.textContent=`Respaldo del ${fecha}: ${Object.keys(ubic).length} ubicaciones registradas. ${nuevas} más recientes que las de este equipo, ${viejas} más antiguas, ${iguales} iguales.`+(skipped?` Se omiten ${skipped} ubicaciones que no existen en esta bodega.`:'');
+    const jm = j.maestro && Array.isArray(j.maestro.rows) ? j.maestro : null;
+    rMaster.disabled=!jm; rMaster.checked = !!jm && (!masterMeta || String(jm.meta?.cargado||'') >= String(masterMeta?.cargado||''));
+    rMasterTxt.textContent = jm ? `Actualizar también el maestro de SKU (${jm.rows.length.toLocaleString('es-CL')} SKU en el archivo)` : 'El archivo no trae maestro de SKU';
+    pending={ubic, maestro:jm};
+    rPreview.hidden=false; rApply.hidden=false;
+  };
+  r.readAsText(f);
+});
+function showRErr(m){ rErr.textContent=m; rErr.hidden=false; rPreview.hidden=true; rApply.hidden=true; pending=null; }
+rApply.onclick=async ()=>{
+  if(!pending) return;
+  if(!canWrite){ showRErr('Tu acceso es de solo lectura.'); return; }
+  const replace = rReplace.checked;
+  const changes={};
+  if(replace){ Object.assign(changes, pending.ubic); }
+  else Object.entries(pending.ubic).forEach(([k,v])=>{ const cur=data.get(k); if(!cur || newer(v,cur)) changes[k]=v; });
+  rApply.disabled=true; rApply.textContent='Cargando…';
+  try{
+    await store.saveMany(changes, replace);
+    if(rMaster.checked && pending.maestro) await store.saveMaster(pending.maestro.rows, pending.maestro.meta);
+    const n=Object.keys(changes).length;
+    toast(replace ? 'Datos reemplazados con el respaldo' : (n ? `Respaldo combinado: ${n} ubicaciones actualizadas` : 'Ya tenías todo al día'));
+    rModal.hidden=true;
+  }catch(e){ showRErr(e?.code==='invalid_argument' ? 'No tienes permiso para cargar datos en esta página.' : (e?.message||'No se pudo cargar el respaldo. Intenta de nuevo.')); }
+  finally{ rApply.disabled=false; rApply.textContent='Cargar respaldo'; }
 };
 </script>
 
