@@ -105,6 +105,12 @@ header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;background:v
 .chip{font:600 15px/1 var(--display);letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--line);background:var(--surface-2);
   border-radius:4px;padding:7px 12px;cursor:pointer;white-space:nowrap}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.chip-sep{flex:none;width:1px;align-self:stretch;background:var(--line);margin:0 4px}
+.chip-cam{border-color:var(--cam);box-shadow:inset 3px 0 0 var(--cam)}
+.chip-cam[aria-pressed="true"]{background:var(--cam);border-color:var(--cam);color:#fff;box-shadow:none}
+.btn.xls{border-color:color-mix(in srgb,#1d7a45 55%,var(--line));color:color-mix(in srgb,#1d7a45 75%,var(--ink));font-weight:600}
+.xls-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px}
+.xls-row span{font-size:12px;color:var(--muted);flex:1 1 180px}
 .legend{display:flex;gap:12px;margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 
@@ -217,7 +223,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 
 <div class="app">
   <header>
-    <div class="brand"><h1>Bodega Ambiente</h1><span>Materias primas · racks de 4 niveles</span></div>
+    <div class="brand"><h1>Bodega MP</h1><span>Ambiente · Refrigerado · Congelado</span></div>
     <div class="stats" aria-live="polite">
       <span><b id="stOcc">0</b>ocupadas</span>
       <span><b id="stFree">0</b>libres</span>
@@ -228,7 +234,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       <input id="q" type="search" placeholder="Buscar SKU, producto o lote" autocomplete="off">
       <button class="btn" id="btnMaestro" type="button">Maestro SKU <span id="mCount" class="count"></span></button>
       <button class="btn" id="btnResp" type="button">Respaldo</button>
-      <button class="btn" id="btnCsv" type="button">Exportar CSV</button>
+      <button class="btn xls" id="btnXls" type="button">Exportar Excel</button>
     </div>
   </header>
 
@@ -297,6 +303,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
         <button class="btn primary" type="submit" id="fSave">Guardar en esta ubicación</button>
       </div>
     </form>
+    <div class="xls-row">
+      <span>Planilla con todas las ubicaciones, incluido lo que acabas de ingresar.</span>
+      <button class="btn xls" type="button" id="dXls">Descargar Excel</button>
+    </div>
   </div>
 </aside>
 <div class="toast" id="toast" hidden></div>
@@ -4187,7 +4197,16 @@ const FILAS = [
   {id:'D', pos:5, tunnel:true, rows:p=>p===1?[]:p===2?[['C1','C2']]:[['C1','C2'],['P3','P4']]},
   {id:'E', pos:5, tunnel:true, rows:p=>[['P1','P2'],['P3','P4']]},
   {id:'F', pos:1, tunnel:false, rows:p=>[['P1','P2'],['P3','P4']]},
+  // cámaras aparte: racks de 5 posiciones, 4 niveles, fondo doble (P1-P2 al frente, P3-P4 al fondo), paso en la 03
+  {id:'RA', zona:'R', letra:'A', nombre:'Refrigerado A', grupo:'Refrigerado', camara:{color:0x3f8fd6, sigla:'R'}, pos:5, tunnel:true, rows:p=>[['P1','P2'],['P3','P4']]},
+  {id:'RS', zona:'R', letra:'S', nombre:'Refrigerado S', grupo:'Refrigerado', camara:{color:0x3f8fd6, sigla:'R'}, pos:5, tunnel:true, rows:p=>[['P1','P2'],['P3','P4']]},
+  {id:'CA', zona:'C', letra:'A', nombre:'Congelado',   grupo:'Congelado',   camara:{color:0x22b5c9, sigla:'C'}, pos:5, tunnel:true, rows:p=>[['P1','P2'],['P3','P4']]},
 ];
+FILAS.forEach(f=>{ f.zona??='A'; f.letra??=f.id; f.nombre??='Fila '+f.id; f.grupo??='Ambiente'; });
+const FILA_BY_ID = Object.fromEntries(FILAS.map(f=>[f.id,f]));
+const GRUPOS = ['Ambiente','Refrigerado','Congelado'];
+const grupoDe = s => s.fila==='P' ? 'Ambiente' : FILA_BY_ID[s.fila].grupo;
+const nombreFila = id => id==='P' ? 'Piso' : FILA_BY_ID[id].nombre;
 const PISO_N = 20;
 const TUNNEL_POS = 3, TUNNEL_LEVELS = [1,2];   // paso libre de tránsito
 const pad2 = n => String(n).padStart(2,'0');
@@ -4202,7 +4221,7 @@ FILAS.forEach(f=>{
     for(let n=1;n<=NIVELES;n++){
       if(isTunnel(f,p,n)) continue;
       rows.forEach((row,ri)=>row.forEach((lbl,ci)=>{
-        SLOTS.push({code:`${ZONA}-${f.id}-${pad2(p)}-${n}-${profNum(lbl)}`, fila:f.id, pos:p, nivel:n, lbl, ri, ci});
+        SLOTS.push({code:`${f.zona}-${f.letra}-${pad2(p)}-${n}-${profNum(lbl)}`, fila:f.id, pos:p, nivel:n, lbl, ri, ci});
       }));
     }
   }
@@ -4367,13 +4386,12 @@ const filaFrames = {};      // fila -> {center, z, width}
 let zCursor = 0, maxX = 0;
 
 // rack F alineado al lado derecho (bajo la posición 05 de las demás filas)
-const xOff = f => f.id==='F' ? (5-f.pos)*BW : 0;
+const xOff = f => f.xBase!=null ? f.xBase : f.id==='F' ? (5-f.pos)*BW : 0;
 const ORDEN = ['F','A','B','C','D','E'];   // de adelante hacia atrás
-ORDEN.map(id=>FILAS.find(x=>x.id===id)).forEach(f=>{
+const rackDepthOf = f => Math.max(...Array.from({length:f.pos},(_,i)=>f.rows(i+1).length))*DEP + .1;
+function buildRack(f, zFront){
   buildTag = f.id;
-  const depthRows = Math.max(...Array.from({length:f.pos},(_,i)=>f.rows(i+1).length));
-  const rackDepth = depthRows*DEP + .1;
-  const zFront = zCursor, zBack = zCursor - rackDepth;
+  const rackDepth = rackDepthOf(f);
   const totalH = NIVELES*LH + .15;
   for(let p=1;p<=f.pos;p++){
     const rows = f.rows(p); const x0=xOff(f)+(p-1)*BW;
@@ -4399,14 +4417,52 @@ ORDEN.map(id=>FILAS.find(x=>x.id===id)).forEach(f=>{
     const ps=textSprite(pad2(p),{size:.55,bg:'#2b3440'}); ps.position.set(x0+BW/2, totalH+.55, zFront-.05);
   }
   // letra de fila y niveles
-  const fl=textSprite(f.id,{size:1.2,bg:'#18202a'}); fl.position.set(xOff(f)-1.1, NIVELES*LH-.2, zFront-rackDepth/2);
+  if(!f.camara){ const fl=textSprite(f.id,{size:1.2,bg:'#18202a'}); fl.position.set(xOff(f)-1.1, NIVELES*LH-.2, zFront-rackDepth/2); }
   for(let n=1;n<=NIVELES;n++){ const s=textSprite('N'+n,{size:.42,bg:'#5b6876'}); s.position.set(xOff(f)-.45,(n-1)*LH+SH/2+.1,zFront+.15); }
   filaFrames[f.id] = {cx:xOff(f)+f.pos*BW/2, z:zFront-rackDepth/2, w:f.pos*BW, zFront};
   maxX = Math.max(maxX, xOff(f)+f.pos*BW);
-  zCursor = zBack - AISLE;
+  return rackDepth;
+}
+ORDEN.forEach(id=>{ const d=buildRack(FILA_BY_ID[id], zCursor); zCursor -= d + AISLE; });
+
+// cámaras de frío: aparte, a la derecha de la bodega ambiente, cada una en su propio recinto
+const ambMaxX = maxX;   // borde derecho de la bodega ambiente
+const camX = maxX + 8;
+let camZ = 0;
+const camBounds = [];
+// cada cámara es un recinto con uno o más racks, uno detrás de otro
+GRUPOS.filter(g=>g!=='Ambiente').forEach(g=>{
+  const racks = FILAS.filter(f=>f.camara && f.grupo===g);
+  if(!racks.length) return;
+  const col = racks[0].camara.color, hex = '#'+col.toString(16).padStart(6,'0');
+  const front = camZ + AISLE*.95;
+  let z = camZ, w = 0;
+  racks.forEach((f,i)=>{
+    f.xBase = camX;
+    const d = buildRack(f, z);
+    w = Math.max(w, f.pos*BW);
+    buildTag = f.id;
+    const sg = textSprite(f.letra,{size:1.2,bg:hex}); sg.position.set(camX-1.1, NIVELES*LH-.2, z-d/2);
+    z -= d + (i<racks.length-1 ? AISLE : 0);
+  });
+  const back = z - 1.1;
+  buildTag = racks.map(f=>f.id);   // el recinto se ve con cualquiera de sus racks
+  const pad = 1.6, cx = camX + w/2, cz = (front+back)/2, W = w + pad*2, D = front-back;
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshLambertMaterial({color:col, transparent:true, opacity:.22}));
+  fl.rotation.x=-Math.PI/2; fl.position.set(cx,.006,cz); scene.add(fl); tag(fl);
+  // muros bajos del recinto (la entrada queda abierta al frente, frente al paso)
+  const wm = new THREE.MeshLambertMaterial({color:col, transparent:true, opacity:.55});
+  const wh=.9, t=.12, gap=BW*1.1;
+  box(W,wh,t,wm,cx,wh/2,back);
+  box(t,wh,D,wm,cx-W/2,wh/2,cz); box(t,wh,D,wm,cx+W/2,wh/2,cz);
+  const side=(W-gap)/2; box(side,wh,t,wm,cx-W/2+side/2,wh/2,front); box(side,wh,t,wm,cx+W/2-side/2,wh/2,front);
+  const lbl = textSprite(g.toUpperCase(),{size:1.05,bg:hex,w:620}); lbl.position.set(cx, NIVELES*LH+1.6, camZ-rackDepthOf(racks[0])/2);
+  camBounds.push({g, front, back, x0:cx-W/2, x1:cx+W/2});
+  camZ = back - 7;
 });
 buildTag = 'P';
-const pisoZ = zCursor + AISLE - 1.2;   // ubicaciones a piso al fondo, detrás de la última fila
+const pisoZ = zCursor + AISLE - 1.2;
+const camMinZ = camZ;   // ubicaciones a piso al fondo, detrás de la última fila
 
 // geometría compartida de las cargas
 const loadGeo = new THREE.BoxGeometry(SW, SH, DEP*.88);
@@ -4420,7 +4476,7 @@ SLOTS.forEach(s=>{
     const fp=new THREE.Mesh(new THREE.PlaneGeometry(1.35,1.4), new THREE.MeshLambertMaterial({color:0xf2c230, transparent:true, opacity:.35}));
     fp.rotation.x=-Math.PI/2; fp.position.set(x,.01,z); scene.add(fp); tag(fp,'P');
   } else {
-    const f = FILAS.find(q=>q.id===s.fila);
+    const f = FILA_BY_ID[s.fila];
     const x0=xOff(f)+(s.pos-1)*BW, zFront=filaFrames[s.fila].zFront;
     x = x0 + BW/2 + (s.ci-.5)*(SW+.15);
     z = zFront - .05 - (s.ri+.5)*DEP;
@@ -4438,7 +4494,45 @@ textSprite('PISO',{size:.9,bg:'#18202a',w:200}).position.set(-1.3,.9,pisoZ-.75);
 for(let i=1;i<=PISO_N;i++){ const m=meshByCode.get(`${ZONA}-P-${pad2(i)}-1-1`); const s=textSprite(String(i),{size:.4,bg:'#5b6876'}); s.position.set(m.position.x, 2.05, m.position.z); }
 buildTag = null;
 
-const sceneMinZ = pisoZ - 2.5;
+const sceneMinZ = Math.min(pisoZ - 2.5, camMinZ);
+
+/* ---- muros que separan las bodegas ---- */
+// se ven solo en la vista "Todo"; al elegir una fila se ocultan para no tapar
+buildTag = '__todo';
+// semitransparentes para no tapar los racks; no reciben clics (solo los pallets son seleccionables)
+const wallMat = new THREE.MeshLambertMaterial({color:0xaab2bb, transparent:true, opacity:.42, depthWrite:false, side:THREE.DoubleSide});
+const capMat  = new THREE.MeshLambertMaterial({color:0x5d6873});
+const WALL_H = NIVELES*LH + .9, WALL_T = .22;
+function wallSeg(x0,z0,x1,z1){
+  const len=Math.hypot(x1-x0,z1-z0); if(len<.05) return;
+  const alongX = Math.abs(x1-x0) > Math.abs(z1-z0);
+  const w = alongX ? len : WALL_T, d = alongX ? WALL_T : len;
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,WALL_H,d), wallMat); m.position.set((x0+x1)/2, WALL_H/2, (z0+z1)/2); m.renderOrder=2; scene.add(m); tag(m);
+  const e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({color:0x5d6873, transparent:true, opacity:.6}));
+  e.position.copy(m.position); scene.add(e); tag(e);
+  const c=new THREE.Mesh(new THREE.BoxGeometry(w+.02,.14,d+.02), capMat); c.position.set(m.position.x, WALL_H, m.position.z); scene.add(c); tag(c);
+}
+// muro principal: ambiente | cámaras de frío, con puerta al frente
+const wallX = ambMaxX + 4, wallFront = 7, wallBack = sceneMinZ - 2.5;
+const doorZ0 = 1.2, doorZ1 = 4.6;   // vano de la puerta
+wallSeg(wallX, wallFront, wallX, doorZ1);
+wallSeg(wallX, doorZ0, wallX, wallBack);
+// dintel sobre la puerta
+{ const h=WALL_H-3.2; const m=new THREE.Mesh(new THREE.BoxGeometry(WALL_T, h, doorZ1-doorZ0), wallMat); m.position.set(wallX, 3.2+h/2, (doorZ0+doorZ1)/2); scene.add(m); tag(m);
+  const c=new THREE.Mesh(new THREE.BoxGeometry(WALL_T+.02,.14,doorZ1-doorZ0+.02), capMat); c.position.set(wallX, WALL_H, (doorZ0+doorZ1)/2); scene.add(c); tag(c); }
+const door = textSprite('ACCESO CÁMARAS',{size:.5,bg:'#5d6873',w:780}); door.position.set(wallX+.4, 3.65, (doorZ0+doorZ1)/2);
+// muros entre cámaras (Refrigerado | Congelado)
+const coldX1 = Math.max(...camBounds.map(b=>b.x1)) + 2.5;
+for(let i=0;i<camBounds.length-1;i++){
+  const z = (camBounds[i].back + camBounds[i+1].front)/2;
+  wallSeg(wallX, z, coldX1, z);
+}
+// muro de fondo y lateral de la zona fría para cerrar el recinto
+wallSeg(coldX1, wallFront, coldX1, wallBack);
+const wallLabels = [['AMBIENTE', (ambMaxX)/2, '#18202a'], ['FRÍO', (wallX+coldX1)/2, '#3f8fd6']];
+wallLabels.forEach(([t,x,bg])=>{ const sp=textSprite(t,{size:.75,bg,w:t.length*52+80}); sp.position.set(x, .45, wallFront-.6); });
+maxX = Math.max(maxX, coldX1);
+buildTag = null;
 floor.scale.set(maxX+14, (4 - sceneMinZ)+8, 1);
 floor.position.set(maxX/2, 0, (4 + sceneMinZ)/2);
 
@@ -4479,7 +4573,7 @@ function paintSlots(){
     m.userData.pal.visible = inFila && st!=='free';
     m.material.emissive?.setHex(code===selected ? 0x333333 : 0x000000);
   });
-  tagged.forEach(o=>{ o.visible = currentFila==='ALL' || o.userData.fila===currentFila; });
+  tagged.forEach(o=>{ const f=o.userData.fila; o.visible = currentFila==='ALL' || (Array.isArray(f) ? f.includes(currentFila) : f===currentFila); });
   const selMesh = selected && meshByCode.get(selected);
   if(selMesh && selMesh.visible){ selBox.position.copy(selMesh.position); selBox.visible=true; } else selBox.visible=false;
 }
@@ -4515,9 +4609,12 @@ function onDataChanged(){
 
 /* ===================== FILAS / ELEVACIÓN ===================== */
 const filabar = document.getElementById('filabar');
-[...FILAS.map(f=>f.id),'P'].forEach(id=>{
-  const b=document.createElement('button'); b.className='chip'; b.type='button'; b.dataset.f=id; b.setAttribute('aria-pressed','false');
-  b.textContent = id==='P' ? 'Piso' : 'Fila '+id;
+[...FILAS.filter(f=>!f.camara).map(f=>f.id),'P','|',...FILAS.filter(f=>f.camara).map(f=>f.id)].forEach(id=>{
+  if(id==='|'){ const sep=document.createElement('span'); sep.className='chip-sep'; sep.setAttribute('aria-hidden','true'); filabar.insertBefore(sep, filabar.querySelector('.legend')); return; }
+  const f=FILA_BY_ID[id];
+  const b=document.createElement('button'); b.className='chip'+(f?.camara?' chip-cam':''); b.type='button'; b.dataset.f=id; b.setAttribute('aria-pressed','false');
+  if(f?.camara) b.style.setProperty('--cam','#'+f.camara.color.toString(16).padStart(6,'0'));
+  b.textContent = nombreFila(id);
   filabar.insertBefore(b, filabar.querySelector('.legend'));
 });
 filabar.addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(b) selectFila(b.dataset.f,true); });
@@ -4542,7 +4639,7 @@ function selectFila(id, fly){
   if(fly){
     if(id==='ALL') viewAll();
     else if(id==='P') flyTo(new THREE.Vector3(7.3,.6,pisoZ-.75), new THREE.Vector3(7.3,9,pisoZ+10));
-    else { const fr=filaFrames[id]; const dist=Math.max(9, fr.w*1.25);
+    else { const fr=filaFrames[id]; const dist=Math.max(9, fr.w*1.25)+(FILA_BY_ID[id].camara?2:0);
       flyTo(new THREE.Vector3(fr.cx, NIVELES*LH/2, fr.z), new THREE.Vector3(fr.cx+fr.w*.15, NIVELES*LH/2+2.2, fr.zFront+dist)); }
   }
   paintSlots(); renderElev();
@@ -4575,7 +4672,8 @@ function renderElev(){
     elev.appendChild(g); return;
   }
   const f=FILAS.find(x=>x.id===currentFila);
-  head.innerHTML=`<h2>Fila ${f.id}</h2><span>${f.pos} posiciones · ${NIVELES} niveles</span>`;
+  head.innerHTML=`<h2></h2><span>${f.pos} posiciones · ${NIVELES} niveles${f.camara?' · cámara aparte':''}</span>`;
+  head.querySelector('h2').textContent = f.camara ? `${f.grupo} · rack ${f.letra}` : f.nombre;
   const back=document.createElement('button'); back.className='btn'; back.type='button'; back.textContent='Ver toda la bodega'; back.onclick=()=>selectFila('ALL',true);
   head.appendChild(back); elev.appendChild(head);
   const g=document.createElement('div'); g.className='elev-grid';
@@ -4591,7 +4689,7 @@ function renderElev(){
       else{
         bay.className='bay'; const labels=rows.flat();
         bay.style.gridTemplateColumns=`repeat(${labels.length},minmax(0,1fr))`;
-        labels.forEach(l=>bay.appendChild(cellBtn(`${ZONA}-${f.id}-${pad2(p)}-${n}-${profNum(l)}`, l)));
+        labels.forEach(l=>bay.appendChild(cellBtn(`${f.zona}-${f.letra}-${pad2(p)}-${n}-${profNum(l)}`, l)));
       }
       g.appendChild(bay);
     }
@@ -4613,7 +4711,7 @@ addEventListener('keydown',e=>{ if(e.key==='Escape' && drawer.classList.contains
 function describe(s){
   if(s.fila==='P') return `Piso · posición ${s.pos}`;
   const prof = s.lbl.startsWith('C') ? `${s.lbl} (frente)` : s.lbl;
-  return `Fila ${s.fila} · Posición ${pad2(s.pos)} · Nivel ${s.nivel} · ${prof}`;
+  return `${nombreFila(s.fila)} · Posición ${pad2(s.pos)} · Nivel ${s.nivel} · ${prof}`;
 }
 function renderDrawer(){
   const s=SLOT_BY_CODE.get(selected); if(!s) return;
@@ -4731,15 +4829,86 @@ function setStatus(m, local){ const s=document.getElementById('status'); s.textC
 let qT; q.addEventListener('input',()=>{ clearTimeout(qT); qT=setTimeout(()=>{ query=q.value; computeMatches(); paintSlots(); renderElev(); },150); });
 
 let downloads=null;
-btnCsv.onclick=async ()=>{
-  const rows=[['Ubicacion','Fila','Posicion','Nivel','Profundidad','Contenedor','SKU','Descripcion','Lote','Cantidad','Unidad','Cajas','OC','Factura','Recepcion','Elaboracion','Vencimiento','Estado','Comentario','Ingreso']];
-  SLOTS.forEach(s=>(data.get(s.code)?.items||[]).forEach(it=>rows.push([s.code,s.fila,s.pos,s.nivel,s.lbl,it.cont,it.sku,it.desc,it.lote,it.cant,it.und,it.cajas,it.oc,it.fact,it.recep,it.elab,it.venc,daysTxt(it),it.com,it.ingreso])));
-  const csv='﻿'+rows.map(r=>r.map(v=>{ const t=String(v??''); return /[;"\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t; }).join(';')).join('\r\n');
-  const filename=`bodega_ambiente_${new Date().toISOString().slice(0,10)}.csv`;
-  if(downloads){ try{ await downloads.save({filename, data:new Blob([csv],{type:'text/csv'})}); }catch(e){} return; }
-  try{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=filename; a.click(); }
-  catch(e){ toast('La descarga no está disponible aquí.'); }
-};
+/* ===================== EXCEL DE UBICACIONES ===================== */
+function isoToDate(v){ if(!v) return null; const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(v); return m ? new Date(+m[1],+m[2]-1,+m[3]) : null; }
+function diasVence(it){ if(!it.venc) return null; return Math.round((new Date(it.venc+'T00:00:00') - new Date(new Date().toDateString()))/864e5); }
+function estadoVence(it){ const d=diasVence(it); return d==null ? 'Sin vencimiento' : d<0 ? 'Vencido' : d<=30 ? 'Por vencer (≤30 días)' : 'Vigente'; }
+const ORDEN_FILA = [...FILAS.filter(f=>!f.camara).map(f=>f.id),'P',...FILAS.filter(f=>f.camara).map(f=>f.id)];
+function slotOrder(a,b){
+  return GRUPOS.indexOf(grupoDe(a))-GRUPOS.indexOf(grupoDe(b)) || ORDEN_FILA.indexOf(a.fila)-ORDEN_FILA.indexOf(b.fila)
+    || a.pos-b.pos || a.nivel-b.nivel || a.lbl.localeCompare(b.lbl);
+}
+const COLS_DET=['Zona','Fila / rack','Posición','Nivel','Profundidad','Ubicación','Estado','Contenedor','SKU','Descripción','Lote','Cantidad','Unidad','Cajas',
+  'Orden de compra','Factura','Recepción','Elaboración','Vencimiento','Días para vencer','Estado vencimiento','Comentario','Ingresado el'];
+function sheetFrom(rows, widths, header){
+  header = header || (rows.length ? Object.keys(rows[0]) : []);
+  const ws=XLSX.utils.json_to_sheet(rows,{header, cellDates:true, dateNF:'dd-mm-yyyy'});
+  ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:Math.max(rows.length,1),c:header.length-1}})};
+  ws['!cols']=widths.map(w=>({wch:w}));
+  // fecha y hora para la columna de ingreso
+  const ci=header.indexOf('Ingresado el');
+  if(ci>=0) for(let r=1;r<=rows.length;r++){ const c=ws[XLSX.utils.encode_cell({r,c:ci})]; if(c && c.t==='d') c.z='dd-mm-yyyy hh:mm'; }
+  return ws;
+}
+const rackDe = id => id==='P' ? 'Piso' : FILA_BY_ID[id].camara ? 'Rack '+FILA_BY_ID[id].letra : FILA_BY_ID[id].nombre;
+function buildWorkbook(){
+  const slots=[...SLOTS].sort(slotOrder);
+  const det=[], venc=[], porSku=new Map(), resumen=new Map();
+  slots.forEach(s=>{
+    const g=grupoDe(s), items=data.get(s.code)?.items||[];
+    const base={'Zona':g, 'Fila / rack':rackDe(s.fila), 'Posición':s.fila==='P'?s.pos:pad2(s.pos), 'Nivel':s.nivel, 'Profundidad':s.lbl, 'Ubicación':s.code};
+    const rk=g+'|'+rackDe(s.fila);
+    if(!resumen.has(rk)) resumen.set(rk,{'Zona':g,'Fila / rack':rackDe(s.fila),'Ubicaciones':0,'Ocupadas':0,'Libres':0,'% ocupación':0,'Productos':0,'Por vencer (≤30 días)':0,'Vencidos':0});
+    const r=resumen.get(rk); r['Ubicaciones']++; if(items.length) r['Ocupadas']++; else r['Libres']++; r['Productos']+=items.length;
+    if(!items.length){ det.push({...base,'Estado':'Libre'}); return; }
+    items.forEach(it=>{
+      const d=diasVence(it), ev=estadoVence(it);
+      if(ev==='Vencido') r['Vencidos']++; else if(ev.startsWith('Por vencer')) r['Por vencer (≤30 días)']++;
+      const row={...base,'Estado':'Ocupada','Contenedor':it.cont||'','SKU':it.sku||'','Descripción':it.desc||'','Lote':it.lote||'',
+        'Cantidad':+it.cant||0,'Unidad':it.und||'','Cajas':it.cajas===''||it.cajas==null?'':+it.cajas,'Orden de compra':it.oc||'','Factura':it.fact||'',
+        'Recepción':isoToDate(it.recep)||(it.ingreso?isoToDate(it.ingreso.slice(0,10)):''),'Elaboración':isoToDate(it.elab)||'','Vencimiento':isoToDate(it.venc)||'',
+        'Días para vencer':d==null?'':d,'Estado vencimiento':ev,'Comentario':it.com||'','Ingresado el':it.ingreso?new Date(it.ingreso):''};
+      det.push(row);
+      if(ev==='Vencido'||ev.startsWith('Por vencer')) venc.push(row);
+      const k=it.sku+'|'+(it.und||'');
+      if(!porSku.has(k)) porSku.set(k,{'SKU':it.sku,'Descripción':it.desc,'Unidad':it.und||'','Cantidad total':0,'Cajas':0,'Pallets':0,'Vencimiento más próximo':null,'Ubicaciones':[]});
+      const p=porSku.get(k); p['Cantidad total']+=+it.cant||0; p['Cajas']+=+it.cajas||0; p['Pallets']++;
+      const vd=isoToDate(it.venc); if(vd && (!p['Vencimiento más próximo'] || vd<p['Vencimiento más próximo'])) p['Vencimiento más próximo']=vd;
+      p['Ubicaciones'].push(s.code);
+    });
+  });
+  // totales por zona
+  const res=[...resumen.values()];
+  GRUPOS.forEach(g=>{
+    const rs=res.filter(r=>r['Zona']===g); if(!rs.length) return;
+    const t={'Zona':g,'Fila / rack':'TOTAL '+g.toUpperCase()}; ['Ubicaciones','Ocupadas','Libres','Productos','Por vencer (≤30 días)','Vencidos'].forEach(c=>t[c]=rs.reduce((a,r)=>a+r[c],0));
+    res.splice(res.lastIndexOf(rs[rs.length-1])+1,0,t);
+  });
+  const tot={'Zona':'TOTAL BODEGA','Fila / rack':''}; ['Ubicaciones','Ocupadas','Libres','Productos','Por vencer (≤30 días)','Vencidos'].forEach(c=>tot[c]=res.filter(r=>!String(r['Fila / rack']).startsWith('TOTAL')).reduce((a,r)=>a+r[c],0));
+  res.push(tot);
+  res.forEach(r=>{ r['% ocupación']=r['Ubicaciones']?Math.round(r['Ocupadas']/r['Ubicaciones']*1000)/10:0; });
+  const skus=[...porSku.values()].sort((a,b)=>String(a['Descripción']).localeCompare(String(b['Descripción']),'es'))
+    .map(p=>({...p,'Vencimiento más próximo':p['Vencimiento más próximo']||'','Ubicaciones':p['Ubicaciones'].join(', ')}));
+  venc.sort((a,b)=>a['Días para vencer']-b['Días para vencer']);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheetFrom(det,[12,14,9,6,11,14,9,12,9,38,12,10,8,7,14,11,11,11,11,9,20,24,17],COLS_DET), 'Ubicaciones');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(res,[16,20,12,10,8,12,10,20,10]), 'Resumen');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(skus.length?skus:[{'SKU':'','Descripción':'Sin productos ingresados'}],[10,40,8,14,8,8,20,60]), 'Stock por SKU');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(venc.length?venc:[{'Zona':'','Ubicación':'Sin productos vencidos ni por vencer'}],[12,14,9,6,11,14,9,12,9,38,12,10,8,7,14,11,11,11,11,9,20,24,17],COLS_DET), 'Por vencer');
+  wb.Props={Title:'Ubicaciones Bodega MP', Author:'Bodega 3D Quinta', CreatedDate:new Date()};
+  return wb;
+}
+async function exportExcel(){
+  if(typeof XLSX==='undefined'){ toast('No se pudo cargar el generador de Excel. Revisa la conexión y vuelve a abrir la página.'); return; }
+  try{
+    const wb=buildWorkbook();
+    const out=XLSX.write(wb,{bookType:'xlsx',type:'array',cellDates:true});
+    const blob=new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    if(await saveFile(`bodega_ubicaciones_${stamp()}.xlsx`, blob)) toast('Excel descargado');
+  }catch(e){ toast('No se pudo generar el Excel.'); }
+}
+btnXls.onclick=exportExcel;
+dXls.onclick=exportExcel;
 
 /* ===================== INTERACCIÓN 3D ===================== */
 const ray=new THREE.Raycaster(), ptr=new THREE.Vector2(); let down=null;
@@ -5016,7 +5185,8 @@ const stamp = () => { const d=new Date(), p=n=>String(n).padStart(2,'0'); return
 function buildBackup(){
   return {app:APP_ID, version:1, exportado:new Date().toISOString(),
     ubicaciones:Object.fromEntries([...data.entries()].filter(([k])=>SLOT_BY_CODE.has(k))),
-    maestro: masterRows.length ? {rows:masterRows, meta:masterMeta} : null};
+    maestro: masterRows.length ? {rows:masterRows, meta:masterMeta} : null,
+    contador_rg: rgLast()};
 }
 async function saveFile(filename, blob){
   if(downloads){ try{ await downloads.save({filename, data:blob}); return true; }catch(e){ return false; } }
@@ -5031,7 +5201,8 @@ function backupFile(){
 }
 function renderBackupSummary(){
   let occ=0; data.forEach(v=>{ if(v.items?.length) occ++; });
-  rSummary.textContent = `${occ} ubicaciones ocupadas · ${master.size.toLocaleString('es-CL')} SKU en el maestro.`;
+  let prods=0; data.forEach(v=>{ prods+=(v.items||[]).length; });
+  rSummary.textContent = `${occ} ubicaciones ocupadas · ${prods} productos con todos sus datos (contenedor, lote, cajas, OC, factura, fechas) · ${master.size.toLocaleString('es-CL')} SKU en el maestro · último contenedor ${rgLast()?fmtRG(rgLast()):'—'}.`;
   const f = backupFile().file;
   rShare.hidden = !(f && navigator.canShare && (()=>{ try{ return navigator.canShare({files:[f]}); }catch(e){ return false; } })());
 }
@@ -5067,7 +5238,9 @@ rFile.addEventListener('change',()=>{
     const jm = j.maestro && Array.isArray(j.maestro.rows) ? j.maestro : null;
     rMaster.disabled=!jm; rMaster.checked = !!jm && (!masterMeta || String(jm.meta?.cargado||'') >= String(masterMeta?.cargado||''));
     rMasterTxt.textContent = jm ? `Actualizar también el maestro de SKU (${jm.rows.length.toLocaleString('es-CL')} SKU en el archivo)` : 'El archivo no trae maestro de SKU';
-    pending={ubic, maestro:jm};
+    const jrg = +j.contador_rg || 0;
+    if(jrg) rInfo.textContent += ` Último contenedor del archivo: ${fmtRG(jrg)}.`;
+    pending={ubic, maestro:jm, rg:jrg};
     rPreview.hidden=false; rApply.hidden=false;
   };
   r.readAsText(f);
@@ -5084,6 +5257,11 @@ rApply.onclick=async ()=>{
   try{
     await store.saveMany(changes, replace);
     if(rMaster.checked && pending.maestro) await store.saveMaster(pending.maestro.rows, pending.maestro.meta);
+    // el correlativo RG solo sube: se queda con el mayor entre este equipo y el archivo
+    if(pending.rg > rgLast()){
+      rgSaveLocal(pending.rg);
+      if(store?.counter){ try{ await store.counter.update({ultimo:pending.rg}); }catch(e){ try{ await store.counter.set({ultimo:pending.rg}); }catch(e2){} } }
+    }
     const n=Object.keys(changes).length;
     toast(replace ? 'Datos reemplazados con el respaldo' : (n ? `Respaldo combinado: ${n} ubicaciones actualizadas` : 'Ya tenías todo al día'));
     rModal.hidden=true;

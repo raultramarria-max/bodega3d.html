@@ -1,6 +1,6 @@
 // Service worker de Bodega 3D: guarda la app para que abra sin señal.
 // Al publicar una versión nueva, cambia el número de VERSION.
-const VERSION = 'bodega3d-v4';
+const VERSION = 'bodega3d-v9';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
