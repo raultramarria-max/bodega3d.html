@@ -22,7 +22,7 @@
   --bg:#e9ecef; --surface:#ffffff; --surface-2:#f3f5f7; --ink:#18202a; --muted:#5b6876; --line:#d3d9df;
   --scene:#dfe3e7; --floor:#c9ced3;
   --steel:#1f5fa8; --beam:#e2742a;
-  --occ:#d9a441; --found:#16a34a; --soon:#e07a1f; --exp:#c8372d; --empty:#8b97a3;
+  --occ:#d9a441; --found:#16a34a; --res:#7c5cc4; --soon:#e07a1f; --exp:#c8372d; --empty:#8b97a3;
   --accent:#1f5fa8; --accent-ink:#ffffff;
   --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -83,6 +83,22 @@ header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;background:v
 .m-acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .m-info{font-size:12.5px;color:var(--muted)}
 .fill-note{font-size:11.5px;color:var(--accent)}
+.move-bar{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--ink);color:var(--surface);display:grid;gap:8px;box-shadow:0 -6px 20px rgba(0,0,0,.25);
+  padding-top:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mv-txt{font-size:13.5px;line-height:1.4}
+.mv-txt b{color:#fff}
+.mv-txt .to{display:inline-block;background:var(--found);color:#fff;border-radius:4px;padding:0 6px;font:500 13px var(--mono)}
+.mv-row{display:flex;gap:8px;flex-wrap:wrap}
+.mv-row input{flex:1 1 200px;min-width:0;border-radius:6px;border:1px solid transparent;padding:8px 10px;font:500 14px var(--mono);background:var(--surface);color:var(--ink);text-transform:uppercase}
+.mv-row .btn{background:var(--surface-2);color:var(--ink)}
+.mv-row .btn.primary{background:var(--found);border-color:var(--found);color:#fff}
+.mv-row .btn:disabled{opacity:.5}
+.item .moved{width:100%;color:var(--accent)}
+/* mientras se mueve un producto, la barra no debe tapar la última fila */
+body.moving .elev{padding-bottom:calc(var(--mvh,120px) + 16px)}
+body.moving .stage .hint{display:none}
+body.moving .cell.sel{outline:3px solid var(--found);outline-offset:1px}
+@media (max-width:700px){ body.moving .app{padding-bottom:var(--mvh,120px)} }
 .tarja-prev{background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:8px;display:flex;justify-content:center}
 .tarja-prev canvas{max-width:100%;height:auto;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .item .cont{font:500 12px var(--mono);background:var(--ink);color:var(--surface);border-radius:4px;padding:1px 6px}
@@ -108,6 +124,22 @@ header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;background:v
 .r-mode legend{font-size:12px;color:var(--muted);padding:0;margin-bottom:6px}
 .radio{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink)}
 .radio input{width:auto;margin-top:3px}
+.r-files{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:6px;max-height:190px;overflow:auto}
+.r-files li{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;padding:7px 10px;border-bottom:1px solid var(--line);font-size:12.5px}
+.r-files li:last-child{border-bottom:0}
+.r-files .ic{font-weight:700;color:var(--ok, #2e9e5b)}
+.r-files .bad .ic{color:var(--exp)}
+.r-files .nm{font:500 12px var(--mono);overflow-wrap:anywhere;min-width:0}
+.r-files .dt{grid-column:2;color:var(--muted)}
+.r-warn{font-size:12.5px;background:color-mix(in srgb,var(--soon) 14%,var(--surface));border-left:3px solid var(--soon);padding:8px 10px;border-radius:0 6px 6px 0}
+.danger-box{border-color:color-mix(in srgb,var(--exp) 45%,var(--line));background:color-mix(in srgb,var(--exp) 5%,var(--surface))}
+.danger-box h3{color:var(--exp)}
+.wipe-lbl{display:grid;gap:4px;font-size:12.5px;color:var(--muted)}
+.wipe-lbl input{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:var(--surface);color:var(--ink);font:500 15px var(--mono);text-transform:uppercase;letter-spacing:.08em;max-width:220px}
+.wipe-btn{justify-self:start}
+#wipeBtn:not(:disabled){background:var(--exp);color:#fff;border-color:var(--exp);font-weight:600}
+.wipe-btn:disabled{opacity:.55;cursor:not-allowed}
+.r-ok{font-size:13.5px;background:color-mix(in srgb,var(--found) 14%,var(--surface));border-left:3px solid var(--found);padding:10px 12px;border-radius:0 6px 6px 0}
 @media (max-width:500px){.f3{grid-template-columns:1fr}}
 .search input{flex:1;min-width:0;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:7px 10px}
 .btn{border:1px solid var(--line);background:var(--surface-2);border-radius:6px;padding:7px 12px;cursor:pointer;white-space:nowrap}
@@ -169,6 +201,16 @@ header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;background:v
 .cell.exp{background:color-mix(in srgb,var(--exp) 62%,var(--surface));border-color:color-mix(in srgb,var(--exp) 70%,var(--ink))}
 .cell.sel{outline:2px solid var(--ink);outline-offset:1px}
 .cell.dim{opacity:.3}
+.cell.res{background:color-mix(in srgb,var(--res) 55%,var(--surface));border-color:color-mix(in srgb,var(--res) 75%,var(--ink));color:var(--ink)}
+.cell.res b{font-size:10.5px;overflow:hidden;text-overflow:ellipsis}
+.res-box{border:1px dashed color-mix(in srgb,var(--res) 60%,var(--line));border-radius:6px;padding:10px 12px;display:grid;gap:8px;background:color-mix(in srgb,var(--res) 7%,var(--surface))}
+.res-box.on{border-style:solid;background:color-mix(in srgb,var(--res) 16%,var(--surface))}
+.res-box .rt{font-weight:600;color:color-mix(in srgb,var(--res) 70%,var(--ink))}
+.res-box .rc{white-space:pre-wrap;overflow-wrap:anywhere}
+.res-box .rm{font-size:12px;color:var(--muted)}
+.res-box .row2{display:flex;gap:8px;flex-wrap:wrap}
+.res-box select,.res-box textarea{width:100%;border:1px solid var(--line);border-radius:5px;padding:7px 9px;background:var(--surface);color:var(--ink);font:inherit}
+.res-box .btn{flex:1 1 auto}
 .cell.found{background:var(--found);border-color:color-mix(in srgb,var(--found) 60%,#000);color:#fff;box-shadow:0 0 0 2px color-mix(in srgb,var(--found) 45%,transparent)}
 .cell.found b{color:#fff}
 .floorgrid{display:grid;grid-template-columns:repeat(10,minmax(54px,1fr));gap:4px}
@@ -219,7 +261,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 @media (max-width:700px){
   .legend{display:none}
   .brand span{display:none}
-  .stats{order:3;width:100%;justify-content:space-between;gap:8px}
+  .stats{order:3;width:100%;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;text-align:center}
+  .stats span{display:flex;flex-direction:column;align-items:center;font-size:11.5px;line-height:1.2}
+  .stats b{margin:0;font-size:17px}
   .search{max-width:none;order:2;flex-wrap:wrap;flex-basis:100%}
   .find-q{flex-basis:100%;max-width:none;order:-1}
   .find-zona{flex:1 1 auto}
@@ -247,6 +291,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <div class="brand"><h1>Bodega MP</h1><span>Ambiente · Refrigerado · Congelado</span></div>
     <div class="stats" aria-live="polite">
       <span><b id="stOcc">0</b>ocupadas</span>
+      <span><b id="stRes">0</b>reservadas</span>
       <span><b id="stFree">0</b>libres</span>
       <span><b id="stSoon">0</b>por vencer</span>
       <span><b id="stExp">0</b>vencidas</span>
@@ -281,6 +326,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       <span><i style="background:var(--occ)"></i>Ocupada</span>
       <span><i style="background:var(--soon)"></i>Vence ≤ 30 días</span>
       <span><i style="background:var(--exp)"></i>Vencida</span>
+      <span><i style="background:var(--res)"></i>Reservada</span>
       <span><i style="background:var(--found)"></i>Encontrado</span>
     </div>
   </nav>
@@ -306,6 +352,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   </div>
   <div class="d-body">
     <div id="dItems"></div>
+    <div class="res-box" id="resBox"></div>
     <form id="form" novalidate>
       <h3 id="fTitle">Ingresar producto</h3>
       <div class="f2">
@@ -348,6 +395,15 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 </aside>
 <div class="toast" id="toast" hidden></div>
 
+<div class="move-bar" id="mvBar" hidden role="region" aria-label="Mover producto">
+  <div class="mv-txt" id="mvTxt"></div>
+  <div class="mv-row">
+    <input id="mvTo" placeholder="o escribe la ubicación, ej. A-E-01-1-1" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Ubicación de destino">
+    <button class="btn primary" type="button" id="mvOk" disabled>Mover</button>
+    <button class="btn" type="button" id="mvCancel">Cancelar</button>
+  </div>
+</div>
+
 <div class="modal" id="tModal" hidden role="dialog" aria-modal="true" aria-labelledby="tTitle">
   <div class="modal-card">
     <h2 id="tTitle">Tarja</h2>
@@ -383,18 +439,16 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     </div>
     <div class="resp-box">
       <h3>Recibir en este equipo</h3>
-      <label class="drop" for="rFile">Toca para elegir el archivo de respaldo (.json)
-        <input id="rFile" type="file" accept=".json,application/json" hidden>
+      <label class="drop" for="rFile"><span>Toca para elegir <b>uno o varios</b> respaldos (.json)<br><small>Puedes seleccionar todos los archivos que te enviaron los celulares a la vez</small></span>
+        <input id="rFile" type="file" accept=".json,application/json" multiple hidden>
       </label>
       <div id="rPreview" hidden style="display:grid;gap:10px">
+        <ul class="r-files" id="rFiles"></ul>
         <div class="m-info" id="rInfo"></div>
-        <fieldset class="r-mode">
-          <legend>Cómo cargarlo</legend>
-          <label class="radio" for="rMerge"><input type="radio" name="rMode" id="rMerge" value="merge" checked>
-            <span><b>Combinar</b> · en cada ubicación queda el dato más reciente. Úsalo para juntar lo de varios celulares.</span></label>
-          <label class="radio" for="rReplace"><input type="radio" name="rMode" id="rReplace" value="replace">
-            <span><b>Reemplazar todo</b> · este equipo queda igual al archivo. Lo que no esté en el archivo se borra.</span></label>
-        </fieldset>
+        <div class="r-warn" id="rDup" hidden></div>
+        <p class="m-info" style="margin:0">Se <b>suma</b> todo a lo que ya hay en este equipo y no se borra nada: si varios celulares ingresaron en la misma ubicación, aparecen como ingresos separados. Si un mismo producto se editó en dos celulares, queda la edición más reciente; si se movió, queda en su ubicación nueva.</p>
+        <label class="radio" for="rBajas"><input type="checkbox" id="rBajas">
+          <span><b>Aplicar también las eliminaciones</b> hechas en esos celulares (salidas de bodega). Déjalo sin marcar si no quieres que se borre nada.</span></label>
         <label class="radio" for="rMaster"><input type="checkbox" id="rMaster" checked> <span id="rMasterTxt">Actualizar también el maestro de SKU</span></label>
       </div>
     </div>
@@ -419,7 +473,17 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
         <button class="btn" type="button" id="rgBtn">Fijar último RG</button>
       </div>
     </div>
+    <div class="resp-box danger-box">
+      <h3>Borrar toda la bodega</h3>
+      <div class="m-info" id="wipeInfo"></div>
+      <label class="radio" for="wipeBk"><input type="checkbox" id="wipeBk" checked> <span>Descargar un respaldo antes de borrar (recomendado)</span></label>
+      <label for="wipeTxt" class="wipe-lbl"><span>Para confirmar, escribe <b>BORRAR</b></span>
+        <input id="wipeTxt" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="BORRAR">
+      </label>
+      <button class="btn danger wipe-btn" type="button" id="wipeBtn" disabled>Borrar toda la información</button>
+    </div>
     <div class="err" id="rErr" hidden></div>
+    <div class="r-ok" id="rOk" hidden></div>
     <div class="m-acts">
       <button class="btn" type="button" id="rClose">Cerrar</button>
       <button class="btn primary" type="button" id="rApply" hidden>Cargar respaldo</button>
@@ -4313,9 +4377,10 @@ function itemStatus(it){
   const d = (new Date(it.venc+'T00:00:00') - new Date(new Date().toDateString()))/864e5;
   return d < 0 ? 'exp' : d <= 30 ? 'soon' : 'ok';
 }
+const reservaDe = code => { const r=data.get(code)?.reserva; return r && r.activa ? r : null; };
 function slotStatus(code){
   const items = data.get(code)?.items || [];
-  if(!items.length) return 'free';
+  if(!items.length) return reservaDe(code) ? 'res' : 'free';
   const st = items.map(itemStatus);
   return st.includes('exp') ? 'exp' : st.includes('soon') ? 'soon' : 'occ';
 }
@@ -4430,7 +4495,7 @@ const mats = {
   floor: new THREE.MeshLambertMaterial({color:0xc9ced3}),
   wood:  new THREE.MeshLambertMaterial({color:0x9a7448}),
 };
-const COLORS = {free:0x4a5562, occ:0xc8902a, soon:0xd0650f, exp:0xb02a21, found:0x16a34a};
+const COLORS = {free:0x4a5562, occ:0xc8902a, soon:0xd0650f, exp:0xb02a21, found:0x16a34a, res:0x7c5cc4};
 
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(1,1), mats.floor);
 floor.rotation.x = -Math.PI/2; scene.add(floor);
@@ -4462,6 +4527,7 @@ let zCursor = 0, maxX = 0;
 // rack F alineado al lado derecho (bajo la posición 05 de las demás filas)
 const xOff = f => f.xBase!=null ? f.xBase : f.id==='F' ? (5-f.pos)*BW : 0;
 const ORDEN = ['F','A','B','C','D','E'];   // de adelante hacia atrás
+const LETRA_BAJA = {B:true};
 const rackDepthOf = f => Math.max(...Array.from({length:f.pos},(_,i)=>f.rows(i+1).length))*DEP + .1;
 function buildRack(f, zFront){
   buildTag = f.id;
@@ -4491,13 +4557,16 @@ function buildRack(f, zFront){
     const ps=textSprite(pad2(p),{size:.55,bg:'#2b3440'}); ps.position.set(x0+BW/2, totalH+.55, zFront-.05);
   }
   // letra de fila y niveles
-  if(!f.camara){ const fl=textSprite(f.id,{size:1.2,bg:'#18202a'}); fl.position.set(xOff(f)-1.1, NIVELES*LH-.2, zFront-rackDepth/2); }
+  // en racks pegados, la letra del de atrás va más abajo para que no quede tapada por la del de adelante
+  if(!f.camara){ const fl=textSprite(f.id,{size:1.2,bg:'#18202a'}); fl.position.set(xOff(f)-(LETRA_BAJA[f.id]?1.9:1.1), NIVELES*LH-.2-(LETRA_BAJA[f.id]?1.7:0), zFront-rackDepth/2); }
   for(let n=1;n<=NIVELES;n++){ const s=textSprite('N'+n,{size:.42,bg:'#5b6876'}); s.position.set(xOff(f)-.45,(n-1)*LH+SH/2+.1,zFront+.15); }
   filaFrames[f.id] = {cx:xOff(f)+f.pos*BW/2, z:zFront-rackDepth/2, w:f.pos*BW, zFront};
   maxX = Math.max(maxX, xOff(f)+f.pos*BW);
   return rackDepth;
 }
-ORDEN.forEach(id=>{ const d=buildRack(FILA_BY_ID[id], zCursor); zCursor -= d + AISLE; });
+// racks pegados espalda con espalda (sin pasillo entre ellos): el B va justo detrás del A
+const JUNTO_CON_SIGUIENTE = {A:true};
+ORDEN.forEach(id=>{ const d=buildRack(FILA_BY_ID[id], zCursor); zCursor -= d + (JUNTO_CON_SIGUIENTE[id] ? .06 : AISLE); });
 
 // cámaras de frío: aparte, a la derecha de la bodega ambiente, cada una en su propio recinto
 const ambMaxX = maxX;   // borde derecho de la bodega ambiente
@@ -4659,7 +4728,7 @@ function paintSlots(){
     m.userData.edge.material.color.setHex(found ? 0x0b5d27 : sceneIsDark() ? 0xc3ccd6 : 0x1b232c);
     if(found){ m.material.opacity = 1; m.material.depthWrite = true; if(inFila) pinCodes.push(code); }
     m.material.transparent = true;
-    m.userData.pal.visible = inFila && st!=='free';
+    m.userData.pal.visible = inFila && st!=='free' && st!=='res';
     m.material.emissive?.setHex(found ? 0x0f5a2a : code===selected ? 0x333333 : 0x000000);
   });
   placePins(pinCodes);
@@ -4675,9 +4744,9 @@ function paintSlots(){
 }
 
 function updateStats(){
-  let occ=0, soon=0, exp=0;
-  SLOTS.forEach(s=>{ const st=slotStatus(s.code); if(st!=='free') occ++; if(st==='soon') soon++; if(st==='exp') exp++; });
-  stOcc.textContent=occ; stFree.textContent=SLOTS.length-occ; stSoon.textContent=soon; stExp.textContent=exp;
+  let occ=0, soon=0, exp=0, res=0;
+  SLOTS.forEach(s=>{ const st=slotStatus(s.code); if(st==='res') res++; else if(st!=='free') occ++; if(st==='soon') soon++; if(st==='exp') exp++; });
+  stOcc.textContent=occ; stRes.textContent=res; stFree.textContent=SLOTS.length-occ-res; stSoon.textContent=soon; stExp.textContent=exp;
 }
 
 function computeMatches(){
@@ -4695,16 +4764,22 @@ function computeMatches(){
       const hay = norm([it.sku,it.desc,it.lote,it.cont].join(' '));
       if(words.every(w=>hay.includes(w))){ matchSet.add(code); hits.push({code,it,sl}); }
     });
+    const rv=v.reserva && v.reserva.activa ? v.reserva : null;
+    if(rv && words.length && words.every(w=>norm('reserva reservada '+rv.area+' '+rv.com).includes(w))){
+      matchSet.add(code); hits.push({code, sl, it:{res:true, sku:'Reservada', desc:`${rv.area} · ${rv.com}`, cant:null, und:''}});
+    }
   });
   hits.sort((a,b)=>slotOrder(a.sl,b.sl));
   // totales por unidad
-  const tot=new Map(); hits.forEach(({it})=>tot.set(it.und||'', (tot.get(it.und||'')||0)+(+it.cant||0)));
-  const totTxt=[...tot].map(([u,n])=>`${fmtQty(n)} ${u}`.trim()).join(' + ');
+  const tot=new Map(); hits.forEach(({it})=>{ if(!it.res) tot.set(it.und||'', (tot.get(it.und||'')||0)+(+it.cant||0)); });
+  const totTxt=[...tot].map(([u,n])=>`${fmtQty(n)} ${u}`.trim()).join(' + ') || 'sin cantidades';
   const donde = zf ? `en ${zf}` : 'en todas las bodegas';
   findSum.innerHTML='';
   if(hits.length){
-    const b=document.createElement('b'); b.textContent=`${hits.length} ${hits.length===1?'pallet':'pallets'}`;
-    findSum.append(b, ` en ${matchSet.size} ${matchSet.size===1?'ubicación':'ubicaciones'} · ${totTxt} · ${donde}`);
+    const nRes=hits.filter(h=>h.it.res).length, nPal=hits.length-nRes;
+    const b=document.createElement('b');
+    b.textContent=[nPal&&`${nPal} ${nPal===1?'pallet':'pallets'}`, nRes&&`${nRes} ${nRes===1?'reservada':'reservadas'}`].filter(Boolean).join(' + ');
+    findSum.append(b, ` en ${matchSet.size} ${matchSet.size===1?'ubicación':'ubicaciones'}${nPal?' · '+totTxt:''} · ${donde}`);
   } else findSum.textContent = words.length ? `Sin coincidencias ${donde}.` : `${zf} no tiene productos ingresados.`;
   results.hidden = !words.length; results.innerHTML='';
   if(!words.length) return;
@@ -4718,7 +4793,7 @@ function computeMatches(){
     b.querySelector('.code').textContent=code;
     const z=b.querySelector('.r-zona'); z.textContent=grupoDe(sl); z.classList.add(grupoDe(sl));
     b.querySelector('.r-desc').textContent=`${it.sku} · ${it.desc}`;
-    b.querySelector('.r-sub').textContent=[`${fmtQty(it.cant)} ${it.und||''}`.trim(), it.lote&&'Lote '+it.lote, it.venc&&'Vence '+fmtDate(it.venc), it.cont].filter(Boolean).join(' · ');
+    b.querySelector('.r-sub').textContent= it.res ? 'Ubicación reservada, sin producto' : [`${fmtQty(it.cant)} ${it.und||''}`.trim(), it.lote&&'Lote '+it.lote, it.venc&&'Vence '+fmtDate(it.venc), it.cont].filter(Boolean).join(' · ');
     b.onclick=()=>{ selectFila(sl.fila,true); openSlot(code); if(matchMedia('(max-width:700px)').matches) results.hidden=true; };
     results.appendChild(b);
   });
@@ -4786,8 +4861,9 @@ function cellBtn(code, label){
   const tot = it.reduce((a,x)=>a+(+x.cant||0),0);
   b.innerHTML = `<span></span><b></b>`;
   b.children[0].textContent=label;
-  b.children[1].textContent = it.length ? (it.length>1 ? `${it.length} prod.` : fmtQty(tot)) : '·';
-  b.title = code + (it.length ? ' · ' + it.map(x=>x.desc).join(', ') : ' · libre');
+  const rv = reservaDe(code);
+  b.children[1].textContent = it.length ? (it.length>1 ? `${it.length} prod.` : fmtQty(tot)) : rv ? rv.area : '·';
+  b.title = code + (it.length ? ' · ' + it.map(x=>x.desc).join(', ') : rv ? ` · reservada para ${rv.area}: ${rv.com}` : ' · libre');
   b.onclick=()=>openSlot(code);
   return b;
 }
@@ -4834,7 +4910,8 @@ function renderElev(){
 const drawer=document.getElementById('drawer'), form=document.getElementById('form');
 let editIdx = -1, armedIdx = -1;
 function openSlot(code){
-  selected=code; editIdx=-1; armedIdx=-1; resetForm();
+  if(moveCtx){ setMoveTarget(code); return; }
+  selected=code; editIdx=-1; armedIdx=-1; resEditing=false; resetForm();
   drawer.classList.add('open'); renderDrawer(); paintSlots(); renderElev();
 }
 function closeDrawer(){ drawer.classList.remove('open'); selected=null; paintSlots(); renderElev(); }
@@ -4851,7 +4928,7 @@ function renderDrawer(){
   dCode.textContent=s.code; dSub.textContent=describe(s);
   const items=data.get(selected)?.items||[];
   const box=dItems; box.innerHTML='';
-  if(!items.length){ box.innerHTML='<div class="empty-note">Ubicación libre. Ingresa el producto con el formulario de abajo.</div>'; }
+  if(!items.length){ box.innerHTML = reservaDe(selected) ? '<div class="empty-note">Sin productos: la ubicación está reservada (ver abajo).</div>' : '<div class="empty-note">Ubicación libre. Ingresa el producto o resérvala con un comentario.</div>'; }
   else { const h=document.createElement('div'); h.className='m-info'; h.style.marginBottom='8px';
     h.textContent = items.length===1 ? '1 producto en esta ubicación' : `${items.length} productos en esta ubicación`; box.appendChild(h);
     const wrap=document.createElement('div'); wrap.style.cssText='display:grid;gap:8px'; box.appendChild(wrap); }
@@ -4871,6 +4948,7 @@ function renderDrawer(){
      ['Recepción', it.recep ? fmtDate(it.recep) : (it.ingreso?new Date(it.ingreso).toLocaleDateString('es-CL'):'—')]]
       .forEach(([k,v])=>{ const sp=document.createElement('span'); sp.textContent=`${k}: ${v}`; meta.appendChild(sp); });
     if(it.com){ const c=document.createElement('span'); c.textContent=it.com; c.style.width='100%'; meta.appendChild(c); }
+    if(it.movido){ const c=document.createElement('span'); c.className='moved'; c.textContent=`Movido desde ${it.movido.de} el ${new Date(it.movido.fecha).toLocaleString('es-CL',{dateStyle:'short',timeStyle:'short'})}`; meta.appendChild(c); }
     const acts=el.querySelector('.acts');
     if(canWrite){
       const e=document.createElement('button'); e.type='button'; e.className='btn'; e.textContent='Editar'; e.onclick=()=>startEdit(i);
@@ -4879,11 +4957,13 @@ function renderDrawer(){
       r.onclick=()=>{ if(armedIdx===i) removeItem(i); else { armedIdx=i; renderDrawer(); } };
       acts.append(e,r);
     }
+    if(canWrite){ const mv=document.createElement('button'); mv.type='button'; mv.className='btn'; mv.textContent='Mover'; mv.onclick=()=>startMove(selected,i); acts.append(mv); }
     const t=document.createElement('button'); t.type='button'; t.className='btn tarja'; t.textContent='Generar tarja'; t.onclick=()=>openTarja(selected,i);
     acts.append(t);
     list.appendChild(el);
   });
   form.hidden = !canWrite;
+  renderReserva();
   if(editIdx<0 && !fSku.value && !fDesc.value){
     fTitle.textContent = items.length ? `Agregar otro producto (ya hay ${items.length})` : 'Ingresar producto';
     fSave.textContent = items.length ? 'Agregar a esta ubicación' : 'Guardar en esta ubicación';
@@ -4933,23 +5013,49 @@ form.addEventListener('submit', async e=>{
     }
     finally{ if(fSave.textContent==='Reservando contenedor…') fSave.textContent=label; }
   }
-  const it={cont, sku, desc, lote:fLote.value.trim(), cant, und:fUnd.value, cajas, oc:fOc.value.trim(), fact:fFact.value.trim(), recep:fRecep.value,
+  const nowIso=new Date().toISOString();
+  const it={id: idx>=0 ? itemKey(items[idx]) : newItemId(), cont, sku, desc, lote:fLote.value.trim(), cant, und:fUnd.value, cajas, oc:fOc.value.trim(), fact:fFact.value.trim(), recep:fRecep.value,
     elab:fElab.value, venc:fVenc.value, com:fCom.value.trim(),
-    ingreso: idx>=0 ? items[idx].ingreso : new Date().toISOString()};
+    ingreso: idx>=0 ? items[idx].ingreso : nowIso};
+  if(idx>=0) it.mod=nowIso;
   if(pend) it.pend=pend; else if(idx>=0 && items[idx].pend && !cont) it.pend=items[idx].pend;
   if(idx>=0) items[idx]=it; else items.push(it);
   const ok = await persist(code, items, idx>=0 ? 'Cambios guardados' : cont ? `Producto ingresado · contenedor ${cont}` : 'Guardado sin señal · el contenedor RG se asigna al volver la conexión');
   if(ok) resetForm();
 });
 async function removeItem(i){
-  const items=(data.get(selected)?.items||[]).filter((_,k)=>k!==i).map(x=>({...x}));
+  const cur=data.get(selected)?.items||[], gone=cur[i];
+  const items=cur.filter((_,k)=>k!==i).map(x=>({...x}));
   armedIdx=-1;
-  await persist(selected, items, 'Producto eliminado de la ubicación');
+  // la baja queda registrada para que, al juntar respaldos de otros celulares, el producto no vuelva a aparecer
+  await persist(selected, items, 'Producto eliminado de la ubicación', gone ? [{k:itemKey(gone), t:new Date().toISOString()}] : []);
 }
-async function persist(code, items, msg){
+/* --- identidad de cada producto (para consolidar respaldos sin perder nada) --- */
+function newItemId(){ return 'i'+(typeof DEVICE_ID!=='undefined'?DEVICE_ID:'')+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function itemKey(it){ return it.id || ('L'+(it.ingreso||'')+'|'+(it.sku||'')); }
+const itemTime = it => String(it.mod || it.ingreso || '');
+// junta varias versiones de una misma ubicación: une productos, gana la edición más reciente y respeta las bajas
+function mergeLoc(versions, applyBajas=true){
+  const vs=versions.filter(Boolean); if(!vs.length) return null;
+  const items=new Map(), bajas=new Map(); let act='', reserva=null;
+  vs.forEach(v=>{
+    if(String(v.actualizado||'')>act) act=String(v.actualizado||'');
+    if(v.reserva && (!reserva || String(v.reserva.fecha||'')>String(reserva.fecha||''))) reserva=v.reserva;
+    (v.bajas||[]).forEach(b=>{ if(b && b.k && (!bajas.has(b.k) || String(b.t)>bajas.get(b.k))) bajas.set(b.k,String(b.t)); });
+    (v.items||[]).forEach(it=>{ const k=itemKey(it), c=items.get(k);
+      if(!c || itemTime(it)>itemTime(c) || (itemTime(it)===itemTime(c) && !c.cont && it.cont)) items.set(k,it); });
+  });
+  const out=[...items].filter(([k,it])=>!(applyBajas && bajas.has(k) && bajas.get(k)>=itemTime(it))).map(([,it])=>it)
+    .sort((a,b)=>String(a.ingreso).localeCompare(String(b.ingreso)));
+  const bl=[...bajas].map(([k,t])=>({k,t})).sort((a,b)=>a.t.localeCompare(b.t)).slice(-200);
+  const base=vs.reduce((m,v)=>String(v.actualizado||'')>=String(m.actualizado||'')?v:m, vs[0]);
+  return {codigo:base.codigo, fila:base.fila, pos:base.pos, nivel:base.nivel, prof:base.prof, items:out, bajas:bl, reserva, actualizado:act||new Date().toISOString()};
+}
+async function persist(code, items, msg, nuevasBajas){
   const s=SLOT_BY_CODE.get(code);
+  const bajas=[...(data.get(code)?.bajas||[]), ...(nuevasBajas||[])].slice(-200);
   // una ubicación vaciada se guarda con lista vacía y fecha, para que al combinar respaldos la salida no se pierda
-  const body = {codigo:code, fila:s.fila, pos:s.pos, nivel:s.nivel, prof:s.lbl, items, actualizado:new Date().toISOString()};
+  const body = {codigo:code, fila:s.fila, pos:s.pos, nivel:s.nivel, prof:s.lbl, items, bajas, reserva:data.get(code)?.reserva||null, actualizado:new Date().toISOString()};
   fSave.disabled=true;
   try{ await store.save(code, body); toast(msg); return true; }
   catch(err){
@@ -4990,7 +5096,7 @@ function slotOrder(a,b){
     || a.pos-b.pos || a.nivel-b.nivel || a.lbl.localeCompare(b.lbl);
 }
 const COLS_DET=['Zona','Fila / rack','Posición','Nivel','Profundidad','Ubicación','Estado','Contenedor','SKU','Descripción','Lote','Cantidad','Unidad','Cajas',
-  'Orden de compra','Factura','Recepción','Elaboración','Vencimiento','Días para vencer','Estado vencimiento','Comentario','Ingresado el'];
+  'Orden de compra','Factura','Recepción','Elaboración','Vencimiento','Días para vencer','Estado vencimiento','Comentario','Movido desde','Ingresado el'];
 function sheetFrom(rows, widths, header){
   header = header || (rows.length ? Object.keys(rows[0]) : []);
   const ws=XLSX.utils.json_to_sheet(rows,{header, cellDates:true, dateNF:'dd-mm-yyyy'});
@@ -5009,16 +5115,17 @@ function buildWorkbook(){
     const g=grupoDe(s), items=data.get(s.code)?.items||[];
     const base={'Zona':g, 'Fila / rack':rackDe(s.fila), 'Posición':s.fila==='P'?s.pos:pad2(s.pos), 'Nivel':s.nivel, 'Profundidad':s.lbl, 'Ubicación':s.code};
     const rk=g+'|'+rackDe(s.fila);
-    if(!resumen.has(rk)) resumen.set(rk,{'Zona':g,'Fila / rack':rackDe(s.fila),'Ubicaciones':0,'Ocupadas':0,'Libres':0,'% ocupación':0,'Productos':0,'Por vencer (≤30 días)':0,'Vencidos':0});
-    const r=resumen.get(rk); r['Ubicaciones']++; if(items.length) r['Ocupadas']++; else r['Libres']++; r['Productos']+=items.length;
-    if(!items.length){ det.push({...base,'Estado':'Libre'}); return; }
+    if(!resumen.has(rk)) resumen.set(rk,{'Zona':g,'Fila / rack':rackDe(s.fila),'Ubicaciones':0,'Ocupadas':0,'Reservadas':0,'Libres':0,'% ocupación':0,'Productos':0,'Por vencer (≤30 días)':0,'Vencidos':0});
+    const rv=reservaDe(s.code);
+    const r=resumen.get(rk); r['Ubicaciones']++; if(items.length) r['Ocupadas']++; else if(rv) r['Reservadas']++; else r['Libres']++; r['Productos']+=items.length;
+    if(!items.length){ det.push(rv ? {...base,'Estado':'Reservada','Descripción':'Reservada para '+rv.area,'Comentario':rv.com,'Ingresado el':rv.fecha?new Date(rv.fecha):''} : {...base,'Estado':'Libre'}); return; }
     items.forEach(it=>{
       const d=diasVence(it), ev=estadoVence(it);
       if(ev==='Vencido') r['Vencidos']++; else if(ev.startsWith('Por vencer')) r['Por vencer (≤30 días)']++;
       const row={...base,'Estado':'Ocupada','Contenedor':it.cont||'','SKU':it.sku||'','Descripción':it.desc||'','Lote':it.lote||'',
         'Cantidad':+it.cant||0,'Unidad':it.und||'','Cajas':it.cajas===''||it.cajas==null?'':+it.cajas,'Orden de compra':it.oc||'','Factura':it.fact||'',
         'Recepción':isoToDate(it.recep)||(it.ingreso?isoToDate(it.ingreso.slice(0,10)):''),'Elaboración':isoToDate(it.elab)||'','Vencimiento':isoToDate(it.venc)||'',
-        'Días para vencer':d==null?'':d,'Estado vencimiento':ev,'Comentario':it.com||'','Ingresado el':it.ingreso?new Date(it.ingreso):''};
+        'Días para vencer':d==null?'':d,'Estado vencimiento':ev,'Comentario':it.com||'','Movido desde':it.movido?it.movido.de:'','Ingresado el':it.ingreso?new Date(it.ingreso):''};
       det.push(row);
       if(ev==='Vencido'||ev.startsWith('Por vencer')) venc.push(row);
       const k=it.sku+'|'+(it.und||'');
@@ -5032,20 +5139,20 @@ function buildWorkbook(){
   const res=[...resumen.values()];
   GRUPOS.forEach(g=>{
     const rs=res.filter(r=>r['Zona']===g); if(!rs.length) return;
-    const t={'Zona':g,'Fila / rack':'TOTAL '+g.toUpperCase()}; ['Ubicaciones','Ocupadas','Libres','Productos','Por vencer (≤30 días)','Vencidos'].forEach(c=>t[c]=rs.reduce((a,r)=>a+r[c],0));
+    const t={'Zona':g,'Fila / rack':'TOTAL '+g.toUpperCase()}; ['Ubicaciones','Ocupadas','Reservadas','Libres','Productos','Por vencer (≤30 días)','Vencidos'].forEach(c=>t[c]=rs.reduce((a,r)=>a+r[c],0));
     res.splice(res.lastIndexOf(rs[rs.length-1])+1,0,t);
   });
-  const tot={'Zona':'TOTAL BODEGA','Fila / rack':''}; ['Ubicaciones','Ocupadas','Libres','Productos','Por vencer (≤30 días)','Vencidos'].forEach(c=>tot[c]=res.filter(r=>!String(r['Fila / rack']).startsWith('TOTAL')).reduce((a,r)=>a+r[c],0));
+  const tot={'Zona':'TOTAL BODEGA','Fila / rack':''}; ['Ubicaciones','Ocupadas','Reservadas','Libres','Productos','Por vencer (≤30 días)','Vencidos'].forEach(c=>tot[c]=res.filter(r=>!String(r['Fila / rack']).startsWith('TOTAL')).reduce((a,r)=>a+r[c],0));
   res.push(tot);
   res.forEach(r=>{ r['% ocupación']=r['Ubicaciones']?Math.round(r['Ocupadas']/r['Ubicaciones']*1000)/10:0; });
   const skus=[...porSku.values()].sort((a,b)=>String(a['Descripción']).localeCompare(String(b['Descripción']),'es'))
     .map(p=>({...p,'Vencimiento más próximo':p['Vencimiento más próximo']||'','Ubicaciones':p['Ubicaciones'].join(', ')}));
   venc.sort((a,b)=>a['Días para vencer']-b['Días para vencer']);
   const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, sheetFrom(det,[12,14,9,6,11,14,9,12,9,38,12,10,8,7,14,11,11,11,11,9,20,24,17],COLS_DET), 'Ubicaciones');
-  XLSX.utils.book_append_sheet(wb, sheetFrom(res,[16,20,12,10,8,12,10,20,10]), 'Resumen');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(det,[12,14,9,6,11,14,9,12,9,38,12,10,8,7,14,11,11,11,11,9,20,24,13,17],COLS_DET), 'Ubicaciones');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(res,[16,20,12,10,11,8,12,10,20,10]), 'Resumen');
   XLSX.utils.book_append_sheet(wb, sheetFrom(skus.length?skus:[{'SKU':'','Descripción':'Sin productos ingresados'}],[10,40,8,14,8,8,20,60]), 'Stock por SKU');
-  XLSX.utils.book_append_sheet(wb, sheetFrom(venc.length?venc:[{'Zona':'','Ubicación':'Sin productos vencidos ni por vencer'}],[12,14,9,6,11,14,9,12,9,38,12,10,8,7,14,11,11,11,11,9,20,24,17],COLS_DET), 'Por vencer');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(venc.length?venc:[{'Zona':'','Ubicación':'Sin productos vencidos ni por vencer'}],[12,14,9,6,11,14,9,12,9,38,12,10,8,7,14,11,11,11,11,9,20,24,13,17],COLS_DET), 'Por vencer');
   wb.Props={Title:'Ubicaciones Bodega MP', Author:'Bodega 3D Quinta', CreatedDate:new Date()};
   return wb;
 }
@@ -5378,7 +5485,7 @@ function renderBackupSummary(){
   const f = backupFile().file;
   rShare.hidden = !(f && navigator.canShare && (()=>{ try{ return navigator.canShare({files:[f]}); }catch(e){ return false; } })());
 }
-btnResp.onclick=()=>{ renderBackupSummary(); rErr.hidden=true; rPreview.hidden=true; rApply.hidden=true; pending=null; rModal.hidden=false; };
+btnResp.onclick=()=>{ renderBackupSummary(); rErr.hidden=true; rOk.hidden=true; rPreview.hidden=true; rApply.hidden=true; pending=null; rModal.hidden=false; };
 rClose.onclick=()=>{ rModal.hidden=true; };
 rModal.addEventListener('click',e=>{ if(e.target===rModal) rModal.hidden=true; });
 addEventListener('keydown',e=>{ if(e.key==='Escape' && !rModal.hidden) rModal.hidden=true; });
@@ -5390,41 +5497,89 @@ rShare.onclick=async ()=>{
 };
 
 let pending=null;
-const newer=(a,b)=> String(a?.actualizado||'') > String(b?.actualizado||'');
-rFile.addEventListener('change',()=>{
-  const f=rFile.files[0]; rFile.value=''; if(!f) return;
-  rErr.hidden=true;
-  const r=new FileReader();
-  r.onload=()=>{
-    let j; try{ j=JSON.parse(r.result); }catch(e){ return showRErr('El archivo no es un respaldo válido (no se pudo leer el JSON).'); }
-    if(!j || j.app!==APP_ID || typeof j.ubicaciones!=='object'){ return showRErr('Este archivo no es un respaldo de Bodega 3D.'); }
-    // solo ubicaciones que existen en esta bodega y con forma correcta
-    const ubic={}; let skipped=0;
-    Object.entries(j.ubicaciones).forEach(([k,v])=>{
-      if(SLOT_BY_CODE.has(k) && v && Array.isArray(v.items)) ubic[k]=v; else skipped++;
-    });
-    let nuevas=0, iguales=0, viejas=0;
-    Object.entries(ubic).forEach(([k,v])=>{ const cur=data.get(k); if(!cur || newer(v,cur)) nuevas++; else if(newer(cur,v)) viejas++; else iguales++; });
-    const fecha=new Date(j.exportado).toLocaleString('es-CL',{dateStyle:'short',timeStyle:'short'});
-    rInfo.textContent=`Respaldo del ${fecha}: ${Object.keys(ubic).length} ubicaciones registradas. ${nuevas} más recientes que las de este equipo, ${viejas} más antiguas, ${iguales} iguales.`+(skipped?` Se omiten ${skipped} ubicaciones que no existen en esta bodega.`:'');
-    const jm = j.maestro && Array.isArray(j.maestro.rows) ? j.maestro : null;
-    rMaster.disabled=!jm; rMaster.checked = !!jm && (!masterMeta || String(jm.meta?.cargado||'') >= String(masterMeta?.cargado||''));
-    rMasterTxt.textContent = jm ? `Actualizar también el maestro de SKU (${jm.rows.length.toLocaleString('es-CL')} SKU en el archivo)` : 'El archivo no trae maestro de SKU';
-    const jrg = +j.contador_rg || 0;
-    if(jrg) rInfo.textContent += ` Último contenedor del archivo: ${fmtRG(jrg)}.`;
-    pending={ubic, maestro:jm, rg:jrg};
-    rPreview.hidden=false; rApply.hidden=false;
-  };
-  r.readAsText(f);
+const readText = f => new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(String(r.result)); r.onerror=()=>res(null); r.readAsText(f); });
+const fmtFecha = iso => { const d=new Date(iso); return isNaN(d) ? '—' : d.toLocaleString('es-CL',{dateStyle:'short',timeStyle:'short'}); };
+const sameLoc = (a,b) => JSON.stringify(a?.reserva||null)===JSON.stringify(b?.reserva||null) && JSON.stringify((a?.items||[]).map(itemKey).sort())===JSON.stringify((b?.items||[]).map(itemKey).sort())
+  && JSON.stringify((a?.items||[]).map(x=>[itemKey(x),itemTime(x),x.cont||'']).sort())===JSON.stringify((b?.items||[]).map(x=>[itemKey(x),itemTime(x),x.cont||'']).sort());
+function consolidate(files, applyBajas){
+  const byLoc=new Map();
+  data.forEach((v,k)=>{ if(SLOT_BY_CODE.has(k)) byLoc.set(k,[v]); });
+  files.forEach(f=>Object.entries(f.ubic).forEach(([k,v])=>{ if(!byLoc.has(k)) byLoc.set(k,[]); byLoc.get(k).push(v); }));
+  const result={};
+  byLoc.forEach((vs,k)=>{ result[k]=mergeLoc(vs, applyBajas); });
+  // un producto movido aparece en su ubicación vieja (respaldos antiguos) y en la nueva: queda solo en la más reciente
+  const best=new Map();
+  Object.entries(result).forEach(([k,v])=>(v?.items||[]).forEach(it=>{ const key=itemKey(it), b=best.get(key);
+    if(!b || itemTime(it)>b.t || (itemTime(it)===b.t && k>b.loc)) best.set(key,{loc:k,t:itemTime(it)}); }));
+  Object.entries(result).forEach(([k,v])=>{ if(v) v.items=v.items.filter(it=>best.get(itemKey(it)).loc===k); });
+  return result;
+}
+function diffSummary(result, replace){
+  const before=new Map(), after=new Map(); let changed=0;
+  data.forEach((v,k)=>(v.items||[]).forEach(it=>before.set(itemKey(it),it)));
+  Object.values(result).forEach(v=>(v?.items||[]).forEach(it=>after.set(itemKey(it),it)));
+  if(!replace) data.forEach((v,k)=>{ if(!(k in result)) (v.items||[]).forEach(it=>after.set(itemKey(it),it)); });
+  Object.entries(result).forEach(([k,v])=>{ if(!sameLoc(v,data.get(k))) changed++; });
+  if(replace) data.forEach((v,k)=>{ if(!(k in result) && (v.items||[]).length) changed++; });
+  let nuevos=0, quitados=0, editados=0;
+  after.forEach((it,k)=>{ const b=before.get(k); if(!b) nuevos++; else if(itemTime(b)!==itemTime(it)) editados++; });
+  before.forEach((it,k)=>{ if(!after.has(k)) quitados++; });
+  // contenedores RG repetidos en pallets distintos (puede pasar si dos celulares sin base compartida usaron el mismo rango)
+  const byCont=new Map();
+  after.forEach((it,k)=>{ if(!it.cont) return; if(!byCont.has(it.cont)) byCont.set(it.cont,new Set()); byCont.get(it.cont).add(k); });
+  const dups=[...byCont].filter(([,ks])=>ks.size>1).map(([c])=>c);
+  return {changed, nuevos, quitados, editados, total:after.size, dups};
+}
+function renderPending(){
+  if(!pending) return;
+  const replace=false;
+  pending.result = consolidate(pending.files, rBajas.checked);
+  const d = diffSummary(pending.result, replace);
+  pending.diff = d;
+  const n=pending.files.length;
+  rInfo.textContent = `Al consolidar ${n===1?'el archivo':`los ${n} archivos`} con este equipo: `
+    + `${d.changed} ${d.changed===1?'ubicación cambia':'ubicaciones cambian'} · ${d.nuevos} ${d.nuevos===1?'producto nuevo':'productos nuevos'} · ${d.editados} ${d.editados===1?'editado':'editados'} · ${d.quitados} ${d.quitados===1?'eliminado':'eliminados'} · ${d.total} productos en total.`;
+  rDup.hidden = !d.dups.length;
+  if(d.dups.length) rDup.textContent = `Atención: ${d.dups.length===1?'el contenedor':'los contenedores'} ${d.dups.slice(0,6).join(', ')}${d.dups.length>6?'…':''} ${d.dups.length===1?'aparece':'aparecen'} en más de un pallet. Pasa cuando dos celulares sin base compartida usan el mismo rango RG. Revisa esos pallets y asigna a cada celular su propio rango con "Fijar último RG".`;
+  rApply.textContent = d.changed ? `Consolidar ${n} ${n===1?'archivo':'archivos'}` : 'Ya está todo al día';
+  rApply.disabled = !d.changed && !(rMaster.checked && pending.maestro) && !(pending.rg > rgLast());
+}
+rFile.addEventListener('change', async ()=>{
+  const list=[...rFile.files]; rFile.value=''; if(!list.length) return;
+  rErr.hidden=true; rOk.hidden=true;
+  const files=[], rows=[];
+  for(const f of list){
+    const txt=await readText(f); let j=null, err='';
+    try{ j=JSON.parse(txt); }catch(e){ err='no se pudo leer (no es JSON)'; }
+    if(!err && (!j || j.app!==APP_ID || typeof j.ubicaciones!=='object')) err='no es un respaldo de Bodega 3D';
+    if(err){ rows.push({name:f.name, bad:true, txt:err}); continue; }
+    const ubic={}; let skipped=0, prods=0, occ=0;
+    Object.entries(j.ubicaciones).forEach(([k,v])=>{ if(SLOT_BY_CODE.has(k) && v && Array.isArray(v.items)){ ubic[k]=v; prods+=v.items.length; if(v.items.length) occ++; } else skipped++; });
+    files.push({name:f.name, exportado:j.exportado, ubic, maestro: j.maestro && Array.isArray(j.maestro.rows) ? j.maestro : null, rg:+j.contador_rg||0});
+    rows.push({name:f.name, txt:`${fmtFecha(j.exportado)} · ${occ} ubicaciones ocupadas · ${prods} productos`+(skipped?` · ${skipped} ubicaciones desconocidas omitidas`:'')});
+  }
+  rFiles.replaceChildren(...rows.map(r=>{ const li=document.createElement('li'); if(r.bad) li.className='bad';
+    const ic=document.createElement('span'); ic.className='ic'; ic.textContent=r.bad?'✕':'✓';
+    const nm=document.createElement('span'); nm.className='nm'; nm.textContent=r.name;
+    const dt=document.createElement('span'); dt.className='dt'; dt.textContent=r.txt; li.append(ic,nm,dt); return li; }));
+  if(!files.length){ rPreview.hidden=false; rApply.hidden=true; rInfo.textContent='Ninguno de los archivos es un respaldo válido de Bodega 3D.'; rDup.hidden=true; pending=null; return; }
+  // maestro: el más reciente entre los archivos
+  const jm = files.map(f=>f.maestro).filter(Boolean).sort((a,b)=>String(b.meta?.cargado||'').localeCompare(String(a.meta?.cargado||'')))[0] || null;
+  rMaster.disabled=!jm; rMaster.checked = !!jm && (!masterMeta || String(jm.meta?.cargado||'') > String(masterMeta?.cargado||''));
+  rMasterTxt.textContent = jm ? `Actualizar también el maestro de SKU (el más reciente: ${jm.rows.length.toLocaleString('es-CL')} SKU, cargado ${fmtFecha(jm.meta?.cargado)})` : 'Los archivos no traen maestro de SKU';
+  pending={files, maestro:jm, rg:Math.max(0,...files.map(f=>f.rg))};
+  rPreview.hidden=false; rApply.hidden=false;
+  renderPending();
 });
+[rBajas,rMaster].forEach(el=>el.addEventListener('change', renderPending));
 function showRErr(m){ rErr.textContent=m; rErr.hidden=false; rPreview.hidden=true; rApply.hidden=true; pending=null; }
 rApply.onclick=async ()=>{
   if(!pending) return;
   if(!canWrite){ showRErr('Tu acceso es de solo lectura.'); return; }
-  const replace = rReplace.checked;
+  const replace = false;
   const changes={};
-  if(replace){ Object.assign(changes, pending.ubic); }
-  else Object.entries(pending.ubic).forEach(([k,v])=>{ const cur=data.get(k); if(!cur || newer(v,cur)) changes[k]=v; });
+  Object.entries(pending.result||{}).forEach(([k,v])=>{ if(v && !sameLoc(v,data.get(k))) changes[k]=v; });
+  const d=pending.diff||{}, nArch=pending.files.length;
   rApply.disabled=true; rApply.textContent='Cargando…';
   try{
     await store.saveMany(changes, replace);
@@ -5435,8 +5590,13 @@ rApply.onclick=async ()=>{
       await raiseSharedRG(pending.rg);
     }
     const n=Object.keys(changes).length;
-    toast(replace ? 'Datos reemplazados con el respaldo' : (n ? `Respaldo combinado: ${n} ubicaciones actualizadas` : 'Ya tenías todo al día'));
-    rModal.hidden=true;
+    pending=null; rPreview.hidden=true; rApply.hidden=true;
+    rOk.hidden=false;
+    rOk.textContent = `Listo: ${nArch} ${nArch===1?'archivo consolidado':'archivos consolidados'}, ${n} ${n===1?'ubicación actualizada':'ubicaciones actualizadas'} (${d.nuevos||0} productos nuevos${d.quitados?`, ${d.quitados} eliminados`:''}).`
+      + ' Para que todos queden iguales, toca "Descargar archivo .json" arriba y envía ese archivo a los demás celulares.';
+    renderBackupSummary(); renderRGInfo();
+    rModal.querySelector('.modal-card').scrollTop=0;
+    toast(n ? 'Carga consolidada' : 'Ya tenías todo al día');
   }catch(e){ showRErr(e?.code==='invalid_argument' ? 'No tienes permiso para cargar datos en esta página.' : (e?.message||'No se pudo cargar el respaldo. Intenta de nuevo.')); }
   finally{ rApply.disabled=false; rApply.textContent='Cargar respaldo'; }
 };
@@ -5780,7 +5940,7 @@ async function assignPendingRG(){
       const items=(data.get(code)?.items||[]).map(x=>({...x}));
       let changed=false;
       for(const it of items){ if(!it.cont && it.pend===DEVICE_ID){ it.cont=await nextRG(); delete it.pend; changed=true; } }
-      if(changed){ const s=SLOT_BY_CODE.get(code); await store.save(code,{codigo:code, fila:s.fila, pos:s.pos, nivel:s.nivel, prof:s.lbl, items, actualizado:new Date().toISOString()}); }
+      if(changed){ const s=SLOT_BY_CODE.get(code); await store.save(code,{codigo:code, fila:s.fila, pos:s.pos, nivel:s.nivel, prof:s.lbl, items, bajas:data.get(code)?.bajas||[], reserva:data.get(code)?.reserva||null, actualizado:new Date().toISOString()}); }
     }
     toast('Contenedores asignados a lo guardado sin señal');
   }catch(e){ /* se reintenta en el próximo cambio o al volver la señal */ }
@@ -5814,6 +5974,143 @@ fbFile.onclick=async ()=>{
   const txt='// Configuración de la base compartida de Bodega 3D. Súbelo a GitHub junto a index.html.\nwindow.BODEGA_FIREBASE = '+JSON.stringify(c.cfg,null,2)+';\n';
   if(await saveFile('config.js', new Blob([txt],{type:'text/javascript'}))) toast('config.js descargado: súbelo a GitHub');
 };
+
+/* ===================== MOVER PRODUCTOS ENTRE UBICACIONES ===================== */
+let moveCtx=null;
+function startMove(code,i){
+  const it=(data.get(code)?.items||[])[i]; if(!it) return;
+  moveCtx={from:code, key:itemKey(it), it, to:null};
+  drawer.classList.remove('open'); armedIdx=-1;
+  selected=code; mvTo.value=''; renderMove(); mvBar.hidden=false; syncMoveSpace(); paintSlots(); renderElev();
+}
+function syncMoveSpace(){ document.body.classList.toggle('moving', !!moveCtx); if(moveCtx) document.documentElement.style.setProperty('--mvh', mvBar.offsetHeight+'px'); }
+function renderMove(){
+  if(!moveCtx) return;
+  const it=moveCtx.it, to=moveCtx.to;
+  mvTxt.replaceChildren();
+  const b=document.createElement('b'); b.textContent=`${it.cont?it.cont+' · ':''}${it.sku} · ${it.desc}`;
+  mvTxt.append('Mover ', b, ` desde ${moveCtx.from}. `);
+  if(to){
+    const t=document.createElement('span'); t.className='to'; t.textContent=to;
+    const n=(data.get(to)?.items||[]).length;
+    mvTxt.append('Destino: ', t, ` · ${describe(SLOT_BY_CODE.get(to))}${n?` · ya tiene ${n} ${n===1?'producto':'productos'} (quedará como un ingreso más)`:' · libre'}`);
+    mvOk.disabled=false; mvOk.textContent='Mover a '+to;
+  } else {
+    mvTxt.append('Toca la ubicación de destino en el 3D o en la vista de frente.');
+    mvOk.disabled=true; mvOk.textContent='Mover';
+  }
+}
+function setMoveTarget(code){
+  if(!moveCtx || !SLOT_BY_CODE.has(code)) return;
+  if(code===moveCtx.from){ toast('Esa es la ubicación de origen: elige otra.'); return; }
+  moveCtx.to=code; selected=code; mvTo.value=code; renderMove(); syncMoveSpace(); paintSlots(); renderElev();
+}
+function cancelMove(){ moveCtx=null; mvBar.hidden=true; syncMoveSpace(); selected=null; paintSlots(); renderElev(); }
+function bodyFor(code, items, extraBajas){
+  const s=SLOT_BY_CODE.get(code);
+  return {codigo:code, fila:s.fila, pos:s.pos, nivel:s.nivel, prof:s.lbl, items,
+    bajas:[...(data.get(code)?.bajas||[]), ...(extraBajas||[])].slice(-200), reserva:data.get(code)?.reserva||null, actualizado:new Date().toISOString()};
+}
+async function doMove(){
+  if(!moveCtx || !moveCtx.to) return;
+  if(!canWrite){ toast('Tu acceso es de solo lectura.'); return; }
+  const {from,to,key}=moveCtx;
+  const src=(data.get(from)?.items||[]).map(x=>({...x}));
+  const i=src.findIndex(x=>itemKey(x)===key);
+  if(i<0){ toast(`El producto ya no está en ${from}; puede que otra persona lo haya movido.`); cancelMove(); return; }
+  const now=new Date().toISOString();
+  const it={...src[i], id:key, mod:now, movido:{de:from, fecha:now}};
+  src.splice(i,1);
+  const dst=[...(data.get(to)?.items||[]).map(x=>({...x})), it];
+  mvOk.disabled=true;
+  try{
+    await store.saveMany({[from]:bodyFor(from,src,[{k:key,t:now}]), [to]:bodyFor(to,dst)}, false);
+    toast(`Movido de ${from} a ${to}`);
+    moveCtx=null; mvBar.hidden=true; syncMoveSpace();
+    const s=SLOT_BY_CODE.get(to); selectFila(s.fila,false); openSlot(to);
+  }catch(e){ mvOk.disabled=false; toast(e?.code==='invalid_argument' ? 'No tienes permiso para mover productos.' : 'No se pudo mover. Intenta de nuevo.'); }
+}
+mvOk.onclick=doMove;
+mvCancel.onclick=cancelMove;
+mvTo.addEventListener('input',()=>{ const v=mvTo.value.trim().toUpperCase(); if(SLOT_BY_CODE.has(v)) setMoveTarget(v); else if(moveCtx){ moveCtx.to=null; renderMove(); } });
+mvTo.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); if(moveCtx?.to) doMove(); else toast('Esa ubicación no existe. Revisa el código, ej. A-E-01-1-1'); } });
+addEventListener('keydown',e=>{ if(e.key==='Escape' && moveCtx) cancelMove(); });
+
+/* ===================== BORRAR TODA LA BODEGA ===================== */
+function wipeCounts(){ let occ=0, prods=0; data.forEach(v=>{ const n=(v.items||[]).length; prods+=n; if(n) occ++; }); return {occ,prods}; }
+function renderWipe(){
+  const {occ,prods}=wipeCounts(), shared = store && store.kind!=='local';
+  wipeInfo.textContent = prods
+    ? `Se eliminarán ${prods} ${prods===1?'producto':'productos'} de ${occ} ${occ===1?'ubicación':'ubicaciones'}${shared?', para todos los usuarios conectados a esta base':' en este equipo'}. El maestro de SKU se mantiene y los contenedores seguirán desde ${fmtRG(rgLast()+1)}: los números RG nunca se repiten.`
+    : 'La bodega ya está vacía.';
+  wipeTxt.value=''; wipeBtn.disabled=true;
+}
+wipeTxt.addEventListener('input',()=>{ wipeBtn.disabled = !(wipeTxt.value.trim().toUpperCase()==='BORRAR' && wipeCounts().prods>0 && canWrite); });
+btnResp.addEventListener('click', renderWipe);
+wipeBtn.onclick=async ()=>{
+  if(wipeTxt.value.trim().toUpperCase()!=='BORRAR') return;
+  if(!canWrite){ toast('Tu acceso es de solo lectura.'); return; }
+  wipeBtn.disabled=true; rErr.hidden=true;
+  if(wipeBk.checked){
+    const bk=backupFile();
+    const ok=await saveFile(bk.name.replace('respaldo','respaldo_antes_de_borrar'), bk.blob);
+    if(!ok){ rErr.textContent='No se pudo descargar el respaldo, así que no se borró nada. Desmarca la casilla si quieres borrar sin respaldo.'; rErr.hidden=false; renderWipe(); return; }
+  }
+  // el correlativo RG queda guardado antes de vaciar: los números ya usados no se vuelven a emitir
+  const last=rgLast(); rgSaveLocal(last); await raiseSharedRG(last);
+  const map={}; data.forEach((v,k)=>{ if(SLOT_BY_CODE.has(k)) map[k]=null; });
+  try{
+    await store.saveMany(map, false);
+    selected=null; editIdx=-1; drawer.classList.remove('open');
+    q.value=''; query=''; computeMatches();
+    rModal.hidden=true;
+    toast(wipeBk.checked ? 'Bodega borrada · el respaldo quedó descargado' : 'Bodega borrada');
+  }catch(e){ rErr.textContent = e?.code==='invalid_argument' ? 'No tienes permiso para borrar la bodega.' : 'No se pudo borrar. Intenta de nuevo.'; rErr.hidden=false; renderWipe(); }
+};
+
+/* ===================== RESERVAR UBICACIÓN CON COMENTARIO ===================== */
+// para lo que usan Desarrollo, Aseo u otras áreas: ocupa la posición sin producto, sin contenedor RG y sin tarja
+const AREAS_RES=['Desarrollo','Aseo','Otro'];
+let resEditing=false;
+function renderReserva(){
+  const code=selected; if(!code) return;
+  const rv=reservaDe(code), box=resBox; box.replaceChildren(); box.className='res-box'+(rv?' on':'');
+  if(resEditing){
+    const sel=document.createElement('select'); sel.id='resArea'; sel.setAttribute('aria-label','Área');
+    AREAS_RES.forEach(a=>{ const o=document.createElement('option'); o.textContent=a; sel.appendChild(o); });
+    const ta=document.createElement('textarea'); ta.id='resCom'; ta.rows=2; ta.placeholder='Ej.: pallets de pruebas de Desarrollo, insumos de aseo…'; ta.setAttribute('aria-label','Comentario');
+    if(rv){ sel.value=AREAS_RES.includes(rv.area)?rv.area:'Otro'; ta.value=rv.com; }
+    const t=document.createElement('div'); t.className='rt'; t.textContent= rv ? 'Editar reserva' : 'Reservar esta ubicación (sin producto)';
+    const row=document.createElement('div'); row.className='row2';
+    const ok=document.createElement('button'); ok.type='button'; ok.className='btn primary'; ok.textContent='Guardar reserva';
+    const no=document.createElement('button'); no.type='button'; no.className='btn'; no.textContent='Cancelar';
+    ok.onclick=()=>{ const c=ta.value.trim(); if(!c){ ta.focus(); toast('Escribe un comentario para la reserva.'); return; } saveReserva(code,{activa:true, area:sel.value, com:c, fecha:new Date().toISOString(), por:DEVICE_ID}); };
+    no.onclick=()=>{ resEditing=false; renderReserva(); };
+    row.append(ok,no); box.append(t,sel,ta,row); setTimeout(()=>ta.focus(),50); return;
+  }
+  if(rv){
+    const t=document.createElement('div'); t.className='rt'; t.textContent='Reservada para '+rv.area;
+    const c=document.createElement('div'); c.className='rc'; c.textContent=rv.com;
+    const m=document.createElement('div'); m.className='rm'; m.textContent='Desde '+new Date(rv.fecha).toLocaleString('es-CL',{dateStyle:'short',timeStyle:'short'});
+    box.append(t,c,m);
+    if(canWrite){ const row=document.createElement('div'); row.className='row2';
+      const e=document.createElement('button'); e.type='button'; e.className='btn'; e.textContent='Editar'; e.onclick=()=>{ resEditing=true; renderReserva(); };
+      const l=document.createElement('button'); l.type='button'; l.className='btn danger'; l.textContent='Liberar ubicación';
+      l.onclick=()=>saveReserva(code,{activa:false, fecha:new Date().toISOString(), por:DEVICE_ID});
+      row.append(e,l); box.append(row); }
+  } else if(canWrite){
+    const b=document.createElement('button'); b.type='button'; b.className='btn'; b.textContent='Reservar con un comentario (sin producto)';
+    b.onclick=()=>{ resEditing=true; renderReserva(); };
+    const m=document.createElement('div'); m.className='rm'; m.textContent='Para dejar la posición ocupada por Desarrollo, Aseo u otra área sin ingresar un producto.';
+    box.append(b,m);
+  } else box.hidden=true;
+}
+async function saveReserva(code, reserva){
+  const s=SLOT_BY_CODE.get(code), cur=data.get(code)||{};
+  const body={codigo:code, fila:s.fila, pos:s.pos, nivel:s.nivel, prof:s.lbl, items:(cur.items||[]).map(x=>({...x})), bajas:cur.bajas||[], reserva, actualizado:new Date().toISOString()};
+  try{ await store.save(code, body); resEditing=false; toast(reserva.activa ? `Ubicación ${code} reservada para ${reserva.area}` : `Ubicación ${code} liberada`); }
+  catch(e){ toast(e?.code==='invalid_argument' ? 'Tu acceso es de solo lectura.' : 'No se pudo guardar la reserva. Intenta de nuevo.'); }
+}
 </script>
 
 <script>
