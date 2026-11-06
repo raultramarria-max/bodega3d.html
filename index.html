@@ -5685,11 +5685,25 @@ function tarjaData(code, it){
     venc: fmtDate(it.venc), recep: it.recep ? fmtDate(it.recep) : (it.ingreso ? fmtDate(it.ingreso.slice(0,10)) : ''), elab: fmtDate(it.elab), ubic: code
   };
 }
+/* ---------- QR → ficha del producto ----------
+   El QR guarda un enlace a ficha.html (publicada junto a esta app) con los datos del pallet.
+   Con la cámara normal del celular abre la ficha; "Mover con QR" sigue leyendo el RG del enlace.
+   FICHA_URL: dejar vacío para usar la misma dirección donde está publicada la app. */
+const FICHA_URL = '';
+function fichaBase(){
+  if(FICHA_URL) return FICHA_URL;
+  try{ if(/^https?:$/.test(location.protocol)) return new URL('ficha.html', location.href).href.split('?')[0].split('#')[0]; }catch(e){}
+  return 'ficha.html';
+}
+function fichaUrl(d, campos){
+  const q=new URLSearchParams(), ok=v=>v!=null && String(v).trim()!=='' && v!=='—';
+  campos.forEach(([k,v])=>{ if(ok(v)) q.set(k,String(v).trim()); });
+  return fichaBase()+'?'+q.toString();
+}
 function qrPayload(d, compact){
   // en tarjas chicas el QR lleva solo lo esencial, para que siga siendo legible
-  if(compact) return JSON.stringify({contenedor:d.cont, sku:d.sku, lote:d.lote, vencimiento:d.venc, ubicacion:d.ubic});
-  return JSON.stringify({contenedor:d.cont, sku:d.sku, descripcion:d.desc, cantidad:d.cant, cajas:d.cajas, lote:d.lote, vencimiento:d.venc,
-    elaboracion:d.elab, oc:d.oc, factura:d.fact, recepcion:d.recep, ubicacion:d.ubic});
+  if(compact) return fichaUrl(d,[['rg',d.cont],['sku',d.sku],['l',d.lote],['v',d.venc],['u',d.ubic]]);
+  return fichaUrl(d,[['rg',d.cont],['sku',d.sku],['d',(d.desc||'').slice(0,40)],['c',d.cant],['l',d.lote],['v',d.venc],['r',d.recep],['u',d.ubic]]);
 }
 function qrMatrix(txt, ecc){
   if(typeof qrcode==='undefined') return null;
@@ -5730,7 +5744,7 @@ function drawTarja(P, d){
   P.line(74,77,74,96,.35);
   const qm=qrMatrix(qrPayload(d, P.k && P.k<.8));
   if(qm){ const n=qm.length, sz=16, m=sz/n; for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(qm[r][c]) P.rect(6.5+c*m,77.6+r*m,m+.01,m+.01,{fill:'#000'}); }
-  P.text('Escanea para ubicar',14.5,95.3,4.3,false,'center');
+  P.text('Escanea: ficha y mover',14.5,95.3,4.3,false,'center');
   const bars=(txt,cx,maxW,cap)=>{
     if(!txt) return;
     const w=code128(txt), M=w.reduce((a,b)=>a+b,0), mw=Math.min(.5,maxW/(M+20));
@@ -5745,13 +5759,13 @@ function drawTarja(P, d){
   P.text(pie,142,99.6,5.3,false,'right');
 }
 /* ---------- Hoja 2: QR grande para leer de lejos ----------
-   Lleva texto simple (se lee con la cámara de cualquier celular) y parte con el contenedor RG,
-   que es lo que usa "Mover con QR" para encontrar el pallet. No lleva la ubicación, porque cambia al mover. */
+   Lleva un enlace corto a la ficha del producto (se abre con la cámara de cualquier celular) que incluye
+   el contenedor RG, que es lo que usa "Mover con QR" para encontrar el pallet. No lleva la ubicación, porque cambia al mover. */
 const QR_BIG_MM=93;
 function qrBigPayload(d){
   // pocos datos = cuadros más grandes = se lee desde más lejos (la cantidad no va: cambia con el picking)
-  const desc=(d.desc||'').toUpperCase(), cut=desc.length>30 ? desc.slice(0,30).trim() : desc;
-  return [d.cont, cut, d.sku && 'SKU '+d.sku, d.lote && 'Lote '+d.lote, d.venc && d.venc!=='—' && 'Vence '+d.venc].filter(Boolean).join('\n');
+  // enlace corto a la ficha: RG, SKU, lote y vencimiento
+  return fichaUrl(d,[['rg',d.cont],['sku',d.sku],['l',d.lote],['v',d.venc]]);
 }
 function drawQRSheet(P, d){
   const blank = v => v && v!=='—' ? v : '—';
@@ -5774,7 +5788,7 @@ function drawQRSheet(P, d){
   P.line(X,64,X+W,64,.3);
   cap('LOTE',69); P.text(blank(d.lote),X,76,fit(blank(d.lote),15,W),true);
   cap('VENCIMIENTO',82); P.text(blank(d.venc),X,90.5,fit(blank(d.venc),20,W),true);
-  P.text('Escanea con "Mover con QR"',X,98.5,5.6,false);
+  P.text('Escanea: ficha · Mover con QR',X,98.5,5.6,false);
 }
 // pintor sobre canvas (vista previa)
 function canvasPainter(ctx,k,rel){

@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ficha de Producto · Bodega Quinta</title>
+<style>
+  :root{
+    --bg:#f3f5f8; --card:#ffffff; --ink:#16202e; --muted:#5d6b7e; --line:#e1e6ee;
+    --brand:#0b5cad; --brand-soft:#e6f0fb; --ok:#1d7a45; --warn:#a65d00; --warn-soft:#fff4e2; --bad:#b3261e; --bad-soft:#fdecea;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f141b; --card:#18202b; --ink:#e8edf4; --muted:#9aa7b8; --line:#2a3443;
+      --brand:#5ea4ef; --brand-soft:#1b2c42; --ok:#5cc489; --warn:#f0b35a; --warn-soft:#3a2c14; --bad:#ff8a80; --bad-soft:#3d1c1a;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:560px;margin:0 auto;padding:16px}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  header .marca{font-weight:800;letter-spacing:.5px;color:var(--brand)}
+  header .rg{font:600 13px ui-monospace,Menlo,monospace;color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+  h1{font-size:22px;margin:0 0 6px;line-height:1.2}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .cat{display:inline-block;background:var(--brand-soft);color:var(--brand);font-size:13px;font-weight:600;padding:3px 10px;border-radius:99px}
+  .cat.tipo{background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-top:4px}
+  .k{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+  .v{font-weight:600;word-break:break-word}
+  .v.big{font-size:20px}
+  .vto-ok{color:var(--ok)} .vto-warn{color:var(--warn)} .vto-bad{color:var(--bad)}
+  .vivo{font-size:12px;color:var(--ok);font-weight:600}
+  h2{font-size:14px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 8px}
+  p{margin:0 0 12px} ul{margin:0 0 12px;padding-left:20px} li{margin-bottom:4px}
+  .aviso{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:13px}
+  .sinficha{background:var(--bad-soft);color:var(--bad);border-radius:10px;padding:10px 12px;font-size:14px}
+  .btns{display:grid;gap:8px}
+  a.btn{display:block;text-align:center;text-decoration:none;font-weight:600;padding:12px;border-radius:10px;border:1px solid var(--line);color:var(--ink);background:var(--card)}
+  a.btn.pri{background:var(--brand);border-color:var(--brand);color:#fff}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin:8px 0 20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="marca">BODEGA QUINTA</span>
+    <span class="rg" id="hdrRg"></span>
+  </header>
+
+  <section class="card">
+    <h1 id="nombre">—</h1>
+    <div class="chips"><span class="cat" id="categoria" hidden></span><span class="cat tipo" id="tipo" hidden></span></div>
+  </section>
+
+  <section class="card">
+    <h2>Este pallet</h2>
+    <div class="grid">
+      <div><div class="k">SKU</div><div class="v" id="sku">—</div></div>
+      <div><div class="k">Lote</div><div class="v" id="lote">—</div></div>
+      <div><div class="k">Cantidad</div><div class="v" id="cant">—</div></div>
+      <div><div class="k" id="ubiK">Ubicación</div><div class="v" id="ubi">—</div></div>
+      <div><div class="k">Vencimiento</div><div class="v big" id="vto">—</div></div>
+      <div><div class="k">Recepción</div><div class="v" id="rec">—</div></div>
+    </div>
+  </section>
+
+  <section class="card" id="infoProducto"><p class="k">Cargando información del producto…</p></section>
+
+  <section class="card btns" id="botones"></section>
+
+  <footer>Datos del pallet según la tarja · Información del producto referencial</footer>
+</div>
+
+<script>
+/* Ficha de producto que abre el QR de la tarja.
+   Parámetros del enlace: rg (contenedor), sku, d (descripción), c (cantidad), l (lote), v (vencimiento), r (recepción), u (ubicación al imprimir).
+   La información del producto sale de productos.json, publicado en la misma carpeta. */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const txt = (id, v) => { $(id).textContent = (v != null && String(v).trim()) || "—"; };
+
+const q = new URLSearchParams(location.search);
+const DEMO = !q.get("rg") && !q.get("sku");
+const p = DEMO
+  ? { rg:"RG00000237", sku:"405612", l:"23488061", c:"100 KG", v:"10-07-2027", u:"R-A-05-4-2", r:"05-11-2026", d:"SATIN PURATOS" }
+  : Object.fromEntries(q.entries());
+
+/* Si este celular tiene la app Bodega 3D guardada (mismo sitio), toma ubicación y cantidad actuales */
+function datoVivo(){
+  try{
+    const o = JSON.parse(localStorage.getItem("bodega3d_quinta_v1") || "{}");
+    for (const [code, v] of Object.entries(o)) {
+      const it = (v && v.items || []).find(x => x.cont === p.rg);
+      if (it) return { ubi: code, cant: it.cant != null ? (String(it.cant) + " " + (it.und || "")).trim() : null };
+    }
+  }catch(e){}
+  return null;
+}
+
+function pintarPallet(prod){
+  document.querySelectorAll(".extra").forEach(e => e.remove());
+  txt("hdrRg", p.rg);
+  txt("nombre", (prod && prod.nombre) || p.d || ("SKU " + (p.sku || "")));
+  if (prod && prod.categoria) { $("categoria").textContent = prod.categoria; $("categoria").hidden = false; }
+  if (prod && prod.tipo) { $("tipo").textContent = prod.tipo; $("tipo").hidden = false; }
+  txt("sku", p.sku); txt("lote", p.l); txt("cant", p.c); txt("rec", p.r);
+
+  const vivo = p.rg ? datoVivo() : null;
+  if (vivo) {
+    txt("ubi", vivo.ubi); if (vivo.cant) txt("cant", vivo.cant);
+    $("ubi").insertAdjacentHTML("afterend", '<div class="vivo extra">Actual, según la app</div>');
+  } else {
+    txt("ubi", p.u);
+    if (p.u) $("ubiK").textContent = "Ubicación al imprimir";
+  }
+
+  txt("vto", p.v);
+  const s = String(p.v || "");
+  const m = s.match(/^(\d{2})[-\/](\d{2})[-\/](\d{4})$/) || s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) {
+    const f = m[1].length === 4 ? new Date(+m[1], +m[2]-1, +m[3]) : new Date(+m[3], +m[2]-1, +m[1]);
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const dias = Math.round((f - hoy) / 86400000);
+    $("vto").className = "v big " + (dias < 0 ? "vto-bad" : dias <= 30 ? "vto-warn" : "vto-ok");
+    $("vto").insertAdjacentHTML("afterend", `<div class="k extra" style="margin-top:2px">${dias < 0 ? "Vencido hace " + (-dias) + " días" : dias === 0 ? "Vence hoy" : dias + " días restantes"}</div>`);
+  }
+}
+
+function pintarProducto(prod, error){
+  const info = $("infoProducto");
+  if (!prod) {
+    info.innerHTML = `<div class="sinficha">${error ? "No se pudo cargar el catálogo de productos (revisa la señal)." : "Este SKU todavía no tiene ficha en el catálogo."} Los datos del pallet son los de la tarja.</div>`;
+  } else {
+    const ingr = prod.tipo === "Ingrediente" || prod.tipo === "Semielaborado";
+    info.innerHTML = `
+      ${prod.paraQueSirve ? `<h2>Para qué sirve</h2><p>${esc(prod.paraQueSirve)}</p>` : ""}
+      ${prod.usos && prod.usos.length ? `<h2>Se usa en</h2><ul>${prod.usos.map(u => `<li>${esc(u)}</li>`).join("")}</ul>` : ""}
+      ${prod.preparacion ? `<h2>Preparación</h2><p>${esc(prod.preparacion)}</p>` : ""}
+      ${prod.almacenamiento ? `<h2>Almacenamiento</h2><p>${esc(prod.almacenamiento)}</p>` : ""}
+      ${ingr && prod.alergenos ? `<h2>Alérgenos</h2><p>${esc(prod.alergenos)}</p>` : ""}
+      ${prod.proveedor ? `<p class="k">Proveedor / marca: ${esc(prod.proveedor)}</p>` : ""}
+      ${prod.validado ? "" : `<div class="aviso">Información referencial, pendiente de validación de Calidad. Ante dudas, manda la ficha técnica del proveedor.</div>`}
+    `;
+  }
+  const nombre = (prod && prod.nombre) || p.d || p.sku || "";
+  const enlaces = (prod && prod.enlaces) || [];
+  $("botones").innerHTML =
+    enlaces.map((e, i) => `<a class="btn ${i === 0 ? "pri" : ""}" href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.texto)}</a>`).join("") +
+    `<a class="btn ${enlaces.length ? "" : "pri"}" href="https://www.google.com/search?q=${encodeURIComponent(nombre + " ficha técnica")}" target="_blank" rel="noopener">Buscar más en internet</a>`;
+}
+
+pintarPallet(null);
+fetch("productos.json", { cache: "no-cache" })
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(cat => {
+    const prod = (cat.productos || cat)[String(p.sku || "").trim()];
+    if (prod) { pintarPallet(prod); }
+    pintarProducto(prod || null, false);
+  })
+  .catch(() => pintarProducto(null, true));
+</script>
+</body>
+</html>
