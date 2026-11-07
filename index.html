@@ -55,6 +55,18 @@ header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;background:v
 .find-zona select{background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:7px 10px;color:var(--ink);font-size:14px;text-transform:none;letter-spacing:0}
 .find-zona select.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));font-weight:600}
 .find-q{position:relative;flex:1 1 280px;max-width:520px;min-width:0}
+.find-ubi{position:relative;flex:0 1 250px;min-width:0}
+.find-ubi input{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:7px 10px;font:500 14px var(--mono);text-transform:uppercase}
+.find-ubi input::placeholder{font-family:var(--body);text-transform:none}
+.ubi-res{position:absolute;left:0;top:calc(100% + 4px);z-index:30;width:max(100%,340px);max-width:calc(100vw - 32px);max-height:60vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 24px rgba(0,0,0,.18)}
+.ubi-res button{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:8px 10px;cursor:pointer;color:var(--ink)}
+.ubi-res button:hover,.ubi-res button:focus-visible{background:var(--surface-2)}
+.ubi-res .c{font:600 13.5px var(--mono)}
+.ubi-res .z{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;border-radius:3px;padding:0 5px;color:#fff;background:#5d6873;align-self:center;justify-self:start}
+.ubi-res .z.Refrigerado{background:#3f8fd6}.ubi-res .z.Congelado{background:#1c9fb1}
+.ubi-res .t{grid-column:1/-1;font-size:12px;color:var(--muted)}
+.ubi-res .t.oc{color:var(--ink)}
+.ubi-res .h{padding:7px 10px;font-size:12px;color:var(--muted);background:var(--surface-2)}
 .find-q input{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:7px 34px 7px 10px}
 .find-q input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
 .find-clear{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:none;font-size:20px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 8px}
@@ -219,6 +231,9 @@ body.moving .cell.sel{outline:3px solid var(--found);outline-offset:1px}
 .cell.dim{opacity:.3}
 .cell.found{background:var(--found);border-color:color-mix(in srgb,var(--found) 60%,#000);color:#fff;box-shadow:0 0 0 2px color-mix(in srgb,var(--found) 45%,transparent)}
 .cell.found b{color:#fff}
+.cell.pick{background:#38bdf8;border-color:#0369a1;color:#06243a;position:relative;box-shadow:0 0 0 2px rgba(56,189,248,.45)}
+.cell.pick b{color:#06243a}
+.cell.pick[data-pkn]::after{content:attr(data-pkn);position:absolute;top:-7px;right:-6px;background:#0369a1;color:#fff;font:700 10px/1 var(--mono);border-radius:999px;padding:3px 5px}
 .floorgrid{display:grid;grid-template-columns:repeat(10,minmax(54px,1fr));gap:4px}
 
 /* Ficha de ubicación */
@@ -270,6 +285,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .stats{order:3;width:100%;justify-content:space-between;gap:8px}
   .search{max-width:none;order:2;flex-wrap:wrap;flex-basis:100%}
   .find-q{flex-basis:100%;max-width:none;order:-1}
+  .find-ubi{flex:1 1 100%;order:0}
   .find-zona{flex:1 1 auto}
   .find-zona select{flex:1}
   .search .btn{flex:1}
@@ -287,6 +303,136 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     padding-left:env(safe-area-inset-left,0px)}
   .elev{max-height:38%}
 }
+/* ---------- Picking (FEFO) ---------- */
+.btn.pick{background:var(--beam);border-color:var(--beam);color:#fff;font-weight:600}
+.btn.pick .count{background:#fff;color:var(--beam)}
+.pick-card{width:min(780px,100%)}
+.pick-card p b{color:var(--ink)}
+.pk-head{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--muted)}
+.pk-head b{color:var(--ink);font-variant-numeric:tabular-nums}
+.pk-head .id{font:500 13px var(--mono);color:var(--ink)}
+.pk-bar{height:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:99px;overflow:hidden}
+.pk-bar span{display:block;height:100%;width:0;background:var(--found);transition:width .3s}
+.pk-filters{display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center}
+.pk-filters select{flex:1 1 220px;min-width:0;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:7px 10px}
+.pk-chk,.pq-chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}
+.pq-chk{color:var(--ink);background:color-mix(in srgb,var(--soon) 10%,var(--surface));border-radius:6px;padding:8px 10px}
+.pk-lines{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pk-line{border:1px solid var(--line);border-left:5px solid var(--empty);border-radius:6px;background:var(--surface)}
+.pk-line.Parcial{border-left-color:var(--soon)}
+.pk-line.Completo{border-left-color:var(--found)}
+.pk-line.Completo .pk-row{opacity:.7}
+.pk-line.Sin{border-left-color:var(--exp)}
+.pk-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;width:100%;text-align:left;background:none;border:0;padding:10px 12px;cursor:pointer;color:inherit}
+.pk-row .d{font-weight:600;line-height:1.3}
+.pk-row .s{font-size:12px;color:var(--muted)}
+.pk-row .q{text-align:right;font:500 13px/1.3 var(--mono);white-space:nowrap}
+.pk-row .q small{display:block;font:400 11.5px var(--body);color:var(--muted)}
+.pk-st{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-radius:3px;padding:1px 6px;margin-left:6px;color:#fff;background:var(--empty);vertical-align:1px}
+.pk-line.Parcial .pk-st{background:var(--soon)} .pk-line.Completo .pk-st{background:var(--found)} .pk-line.Sin .pk-st{background:var(--exp)}
+.pk-next{grid-column:1/-1;font-size:12.5px;border-radius:4px;padding:6px 8px;margin-top:4px;background:color-mix(in srgb,var(--found) 13%,var(--surface));border:1px solid color-mix(in srgb,var(--found) 40%,var(--line))}
+.pk-next b{font-family:var(--mono);font-weight:500}
+.pk-next.none{background:color-mix(in srgb,var(--exp) 10%,var(--surface));border-color:color-mix(in srgb,var(--exp) 40%,var(--line))}
+.pk-sug{padding:0 12px 12px;display:grid;gap:6px}
+.pk-sug h4{margin:2px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.pk-pal{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 10px;align-items:center;font-size:12.5px;border:1px solid var(--line);border-radius:6px;padding:7px 8px;background:var(--surface-2)}
+.pk-pal .n{font:700 18px/1 var(--display);width:24px;text-align:center;color:var(--muted)}
+.pk-pal.first{border-color:var(--found)} .pk-pal.first .n{color:var(--found)}
+.pk-pal.exp{border-color:var(--exp)} .pk-pal.exp .n{color:var(--exp)}
+.pk-pal .u{font:500 13px var(--mono)}
+.pk-pal .m{color:var(--muted)}
+.pk-pal .btn{padding:6px 10px;font-size:12.5px}
+.pk-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-radius:3px;padding:1px 5px;color:#fff;background:var(--found);margin-left:4px}
+.pk-tag.exp{background:var(--exp)} .pk-tag.soon{background:var(--soon)}
+.pk-empty{font-size:12.5px;color:var(--muted);padding:4px 0}
+.pk-badge{position:absolute;left:10px;top:10px;z-index:5;display:flex;flex-wrap:wrap;gap:6px;align-items:center;max-width:calc(100% - 20px);
+  background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12.5px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.pk-badge>b{font:700 13px var(--display);text-transform:uppercase;letter-spacing:.04em;margin-right:2px}
+.pk-bd{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 9px;cursor:pointer;font-size:12.5px;color:var(--ink)}
+.pk-bd i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.pk-bd small{font:500 11px var(--mono);color:var(--muted)}
+.pk-bd.on{border-color:var(--ink);font-weight:700;box-shadow:0 0 0 2px color-mix(in srgb,var(--ink) 25%,transparent)}
+.pk-bd.off{opacity:.5}
+.pk-docs{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pk-docs>span{font-size:12px;color:var(--muted);margin-right:2px}
+.pk-docs .pk-bd{padding:6px 11px;font-size:13px}
+.pk-dot{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;margin-right:4px}
+.pk-comp{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;border-radius:3px;padding:1px 5px;background:var(--soon);color:#fff;margin-left:4px}
+.pk-altlink{display:inline-block;margin-left:6px;font-weight:600;color:var(--accent);text-decoration:underline;cursor:pointer}
+.pk-eq{font-weight:600;color:#6366f1}
+.pk-falta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.pk-falta .btn{padding:6px 10px;font-size:12.5px}
+.ps-q{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:9px 10px}
+.ps-list{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:46vh;overflow:auto}
+.ps-it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:var(--surface-2)}
+.ps-it .d{font-weight:600;line-height:1.3}
+.ps-it .s{font-size:12px;color:var(--muted)}
+.ps-it.nostock{opacity:.6}
+.ps-it .btn{padding:6px 10px;font-size:12.5px}
+.ps-sec{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding-top:4px}
+.ps-cur{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12.5px}
+.ps-chip{display:inline-flex;gap:6px;align-items:center;border:1px solid #6366f1;color:var(--ink);border-radius:999px;padding:3px 4px 3px 10px;background:color-mix(in srgb,#6366f1 10%,var(--surface))}
+.ps-chip button{border:0;background:#6366f1;color:#fff;border-radius:999px;padding:2px 8px;cursor:pointer;font-size:12px}
+.ph-card{width:min(760px,100%)}
+.ph-day{display:flex!important;flex-direction:row!important;align-items:center;gap:8px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.ph-day select{flex:1;min-width:0;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:8px 10px;color:var(--ink);font-size:14px;text-transform:none;letter-spacing:0}
+.ph-sub{font-size:13px;color:var(--muted);margin-top:2px}
+.ph-sub b{color:var(--ink)}
+.ph-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:10px}
+.ph-kpi{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:var(--surface-2)}
+.ph-kpi span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.ph-kpi b{font:600 18px var(--mono)}
+.ph-kpi.ago b{color:var(--exp)}
+.ph-bar{height:8px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;margin-top:8px}
+.ph-bar span{display:block;height:100%;background:var(--beam)}
+.ph-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ph-chips .pk-bd{cursor:default}
+.ph-day-h{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font:700 14px var(--display);text-transform:uppercase;letter-spacing:.03em;border-bottom:2px solid var(--line);padding:10px 0 4px}
+.ph-day-h span{font:500 12px var(--body);text-transform:none;letter-spacing:0;color:var(--muted)}
+.ph-list{list-style:none;margin:0;padding:0;display:grid;gap:6px;margin-top:6px}
+.ph-mv{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:2px 10px;align-items:start;border:1px solid var(--line);border-left:5px solid var(--empty);border-radius:6px;padding:7px 10px;background:var(--surface);font-size:12.5px}
+.ph-mv .h{font:500 13px var(--mono);color:var(--muted)}
+.ph-mv .d{font-weight:600;font-size:13px;line-height:1.3}
+.ph-mv .s{color:var(--muted)}
+.ph-mv .q{text-align:right;font:600 15px var(--mono);white-space:nowrap}
+.ph-mv .q small{display:block;font:400 11.5px var(--body);color:var(--muted)}
+.ph-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;border-radius:3px;padding:1px 5px;margin-left:4px;color:#fff;background:var(--empty)}
+.ph-tag.ago{background:var(--exp)} .ph-tag.nf{background:var(--soon)} .ph-tag.eq{background:#6366f1}
+.ph-lote{border:0;background:none;color:var(--accent);text-decoration:underline;cursor:pointer;padding:0;font:inherit}
+.ph-empty{color:var(--muted);font-size:13px;padding:10px 0}
+.btn.hist{border-color:color-mix(in srgb,var(--beam) 55%,var(--line));color:color-mix(in srgb,var(--beam) 80%,var(--ink));font-weight:600}
+.pk-ruta-note{font-size:12.5px;color:var(--muted);background:color-mix(in srgb,#38bdf8 12%,var(--surface));border:1px solid color-mix(in srgb,#38bdf8 45%,var(--line));border-radius:6px;padding:7px 10px}
+.pk-ruta-note i{display:inline-block;width:10px;height:10px;border-radius:2px;background:#38bdf8;vertical-align:-1px;margin-right:4px}
+.pk-stop{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:start;border:1px solid var(--line);border-left:5px solid #38bdf8;border-radius:6px;padding:10px 12px;background:var(--surface)}
+.pk-stop.next{border-color:#0369a1;border-left-color:#0369a1;box-shadow:0 0 0 2px color-mix(in srgb,#38bdf8 40%,transparent)}
+.pk-stopn{font:700 22px/1 var(--display);background:#38bdf8;color:#06243a;border-radius:6px;min-width:34px;text-align:center;padding:6px 4px}
+.pk-stop.next .pk-stopn{background:#0369a1;color:#fff}
+.pk-stop .u{font:600 15px var(--mono)}
+.pk-stop .u small{font:700 10.5px var(--body);text-transform:uppercase;letter-spacing:.04em;background:#0369a1;color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:2px}
+.pk-stop .d{font-weight:600;line-height:1.3}
+.pk-stop .s{font-size:12px;color:var(--muted)}
+.pk-take{text-align:right;display:grid;gap:6px;justify-items:end}
+.pk-take .q{font:600 18px var(--mono);white-space:nowrap}
+.pk-take .q small{font:400 12px var(--body);color:var(--muted)}
+.pk-take .btn{padding:6px 10px;font-size:12.5px}
+.pk-falta{border:1px solid color-mix(in srgb,var(--exp) 45%,var(--line));border-left:5px solid var(--exp);border-radius:6px;padding:8px 12px;font-size:12.5px}
+@media (max-width:520px){.pk-stop{grid-template-columns:auto minmax(0,1fr)}.pk-take{grid-column:1/-1;grid-template-columns:auto 1fr 1fr;align-items:center;justify-items:stretch;text-align:left}}
+.pq-info{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;margin:0;font-size:13px}
+.pq-info dt{color:var(--muted)}
+.pq-info dd{margin:0;font-weight:600;word-break:break-word}
+.pq-info dd.big{font-size:15px}
+.pq-ok,.pq-warn{border-radius:6px;padding:8px 10px;font-size:13px;line-height:1.4}
+.pq-ok{background:color-mix(in srgb,var(--found) 12%,var(--surface));border:1px solid var(--found)}
+.pq-warn{background:color-mix(in srgb,var(--soon) 14%,var(--surface));border:1px solid var(--soon)}
+.pq-warn.bad{background:color-mix(in srgb,var(--exp) 12%,var(--surface));border-color:var(--exp)}
+.pq-qty{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#pqModal label,#pModal .pq-qty label{display:grid;gap:4px;font-size:12px;color:var(--muted)}
+#pqModal select,.pq-qty input{width:100%;min-width:0;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:8px 10px;color:var(--ink)}
+.pq-qty input{font:600 20px var(--mono)}
+#pqModal label.pq-chk,#pModal label.pk-chk{display:flex!important;flex-direction:row;align-items:center;gap:8px;font-size:13px}
+.pk-chk input,.pq-chk input{width:auto!important;flex:none;margin:0;padding:0}
+.pq-chk span{line-height:1.35}
+@media (max-width:520px){.pq-qty{grid-template-columns:1fr}.pk-pal{grid-template-columns:auto minmax(0,1fr)}.pk-pal .btn{grid-column:1/-1}}
 @media (prefers-reduced-motion:reduce){.drawer{transition:none}}
 </style>
 
@@ -301,6 +447,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     </div>
     <div class="search">
       <button class="btn qrmove" id="btnQrMove" type="button">Mover con QR</button>
+      <button class="btn pick" id="btnPick" type="button">Picking <span id="pkCount" class="count"></span></button>
       <button class="btn" id="btnMaestro" type="button">Maestro SKU <span id="mCount" class="count"></span></button>
       <button class="btn" id="btnResp" type="button">Respaldo</button>
       <button class="btn xls" id="btnXls" type="button">Exportar Excel</button>
@@ -320,6 +467,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       <input id="q" type="search" placeholder="Buscar por SKU o nombre del producto" autocomplete="off" spellcheck="false" aria-label="Buscar por SKU o nombre del producto">
       <button class="find-clear" id="qClear" type="button" aria-label="Limpiar búsqueda" hidden>×</button>
     </div>
+    <div class="find-ubi">
+      <input id="qUbi" type="search" placeholder="Ubicación (ej. A-F-01-2-2, F-01-2)" autocomplete="off" spellcheck="false" aria-label="Buscar por ubicación" autocapitalize="characters">
+      <div class="ubi-res" id="ubiRes" hidden></div>
+    </div>
     <div class="find-sum" id="findSum" aria-live="polite"></div>
   </div>
 
@@ -336,6 +487,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 
   <div class="stage">
     <div id="scene"></div>
+    <div class="pk-badge" id="pkBadge" hidden></div>
     <div class="nojs" id="nojs">
       <b>La app no se está ejecutando en este visor.</b>
       <span>El celular abrió el archivo en modo vista previa, que muestra la página pero no la hace funcionar. Ábrelo con Chrome (Android) o Safari (iPhone) desde una dirección web, por ejemplo GitHub Pages.</span>
@@ -403,6 +555,92 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <input id="mvTo" placeholder="o escribe la ubicación, ej. A-E-01-1-1" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Ubicación de destino">
     <button class="btn primary" type="button" id="mvOk" disabled>Mover</button>
     <button class="btn" type="button" id="mvCancel">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal" id="pModal" hidden role="dialog" aria-modal="true" aria-labelledby="pTitle">
+  <div class="modal-card pick-card">
+    <h2 id="pTitle">Picking</h2>
+    <div id="pkEmpty">
+      <p>Carga el archivo JSON del picking. Para cada producto la app te indica <b>qué pallet sacar primero según el vencimiento</b> (FEFO); lees el QR de la tarja, ingresas la cantidad y se descuenta del stock. Cada salida queda registrada para la trazabilidad.</p>
+      <label class="drop" for="pkFile"><span>Toca para elegir el archivo <b>picking-….json</b></span></label>
+    </div>
+    <input id="pkFile" type="file" accept=".json,application/json" hidden>
+    <div id="pkBody" hidden>
+      <div class="pk-head" id="pkHead"></div>
+      <div class="pk-bar" aria-hidden="true"><span id="pkBarFill"></span></div>
+      <div class="pk-docs" id="pkDocs"></div>
+      <div class="pk-filters">
+        <select id="pkView" aria-label="Vista">
+          <option value="ruta">Ruta por ubicación</option>
+          <option value="doc">Por documento</option>
+        </select>
+        <select id="pkDoc" aria-label="Documento"></select>
+        <label class="pk-chk"><input type="checkbox" id="pkHideDone"><span>Ocultar completos</span></label>
+      </div>
+      <ul class="pk-lines" id="pkLines"></ul>
+    </div>
+    <div class="err" id="pkErr" hidden></div>
+    <div class="m-acts">
+      <button class="btn" type="button" id="pkClose">Cerrar</button>
+      <button class="btn hist" type="button" id="pkHist">Historial</button>
+      <button class="btn" type="button" id="pkNew" hidden>Cargar otro picking</button>
+      <button class="btn" type="button" id="pkJson" hidden>JSON actualizado</button>
+      <button class="btn xls" type="button" id="pkXls" hidden>Excel trazabilidad</button>
+      <button class="btn primary pk-scanbtn" type="button" id="pkScan" hidden>Escanear QR</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="pqModal" hidden role="dialog" aria-modal="true" aria-labelledby="pqTitle">
+  <div class="modal-card">
+    <h2 id="pqTitle">Sacar del pallet</h2>
+    <dl class="pq-info" id="pqInfo"></dl>
+    <label id="pqLineL" for="pqLine">Línea del picking
+      <select id="pqLine"></select>
+    </label>
+    <div id="pqFefo"></div>
+    <label class="pq-chk" id="pqForceL" hidden><input type="checkbox" id="pqForce"><span>Sacar este pallet igual (quedará registrado como <b>no cumple FEFO</b>)</span></label>
+    <div class="pq-qty">
+      <label for="pqCant">Cantidad a pickear <span id="pqUnd"></span>
+        <input id="pqCant" type="number" inputmode="decimal" min="0" step="any">
+      </label>
+      <label for="pqBul">Bultos / envases
+        <input id="pqBul" type="number" inputmode="decimal" min="0" step="any">
+      </label>
+    </div>
+    <div class="m-info" id="pqHelp"></div>
+    <div class="err" id="pqErr" hidden></div>
+    <div class="m-acts">
+      <button class="btn" type="button" id="pqCancel">Cancelar</button>
+      <button class="btn primary" type="button" id="pqOk">Confirmar y descontar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="psModal" hidden role="dialog" aria-modal="true" aria-labelledby="psTitle">
+  <div class="modal-card">
+    <h2 id="psTitle">SKU equivalente</h2>
+    <p id="psInfo"></p>
+    <div id="psCur"></div>
+    <input id="psQ" class="ps-q" type="search" placeholder="Buscar por SKU o nombre (ej. HUEVO LIQUIDO)" autocomplete="off">
+    <ul class="ps-list" id="psList"></ul>
+    <label class="pq-chk ps-rec" for="psRec"><input type="checkbox" id="psRec" checked><span>Recordar esta equivalencia para los próximos pickings</span></label>
+    <div class="m-acts"><button class="btn" type="button" id="psClose">Listo</button></div>
+  </div>
+</div>
+
+<div class="modal" id="phModal" hidden role="dialog" aria-modal="true" aria-labelledby="phTitle">
+  <div class="modal-card ph-card">
+    <h2 id="phTitle">Historial</h2>
+    <div id="phHead"></div>
+    <label class="ph-day" for="phDay">Día <select id="phDay"></select></label>
+    <div id="phBody"></div>
+    <div class="m-acts">
+      <button class="btn" type="button" id="phBack" hidden>Volver al día</button>
+      <button class="btn" type="button" id="phClose">Cerrar</button>
+      <button class="btn xls" type="button" id="phXls">Descargar Excel</button>
+    </div>
   </div>
 </div>
 
@@ -4513,7 +4751,7 @@ const mats = {
   floor: new THREE.MeshLambertMaterial({color:0xc9ced3}),
   wood:  new THREE.MeshLambertMaterial({color:0x9a7448}),
 };
-const COLORS = {free:0x4a5562, occ:0xc8902a, soon:0xd0650f, exp:0xb02a21, found:0x16a34a};
+const COLORS = {free:0x4a5562, occ:0xc8902a, soon:0xd0650f, exp:0xb02a21, found:0x16a34a, pick:0x38bdf8};
 
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(1,1), mats.floor);
 floor.rotation.x = -Math.PI/2; scene.add(floor);
@@ -4736,7 +4974,8 @@ function paintSlots(){
     const inFila = (currentFila==='ALL' || s.fila===currentFila) && (!zoneFilter || grupoDe(s)===zoneFilter);
     const match = !matchSet || matchSet.has(code);
     const found = searching && matchSet && matchSet.has(code);
-    m.material.color.setHex(found ? COLORS.found : COLORS[st]);
+    const pk = !found && window.pkMapSet && window.pkMapSet.has(code);   // ubicación con pallet para picking
+    m.material.color.setHex(found ? COLORS.found : pk ? (window.pkMapColor?.get(code)?.[0] ? parseInt(window.pkMapColor.get(code)[0].slice(1),16) : COLORS.pick) : COLORS[st]);
     const dim = !match;
     m.visible = inFila;
     if(st==='free'){ m.material.opacity = dim ? .1 : .45; m.material.depthWrite=false; }
@@ -4745,6 +4984,7 @@ function paintSlots(){
     m.userData.edge.material.opacity = dim ? .15 : .9;
     m.userData.edge.material.color.setHex(found ? 0x0b5d27 : sceneIsDark() ? 0xc3ccd6 : 0x1b232c);
     if(found){ m.material.opacity = 1; m.material.depthWrite = true; if(inFila) pinCodes.push(code); }
+    if(pk){ m.material.opacity = 1; m.material.depthWrite = true; m.userData.edge.material.color.setHex(0x0369a1); m.userData.edge.material.opacity=1; }
     m.material.transparent = true;
     m.userData.pal.visible = inFila && st!=='free';
     m.material.emissive?.setHex(found ? 0x0f5a2a : code===selected ? 0x333333 : 0x000000);
@@ -4813,8 +5053,10 @@ function computeMatches(){
 }
 
 function onDataChanged(){
+  try{ window.pkRecalc && window.pkRecalc(); }catch(e){}
   updateStats(); computeMatches(); paintSlots(); renderElev();
   if(selected) renderDrawer();
+  try{ const pm=document.getElementById('pModal'); if(pm && !pm.hidden && typeof renderPick==='function') renderPick(); }catch(e){}
 }
 
 /* ===================== FILAS / ELEVACIÓN ===================== */
@@ -4869,7 +5111,13 @@ function cellBtn(code, label){
   const st=slotStatus(code), it=(data.get(code)?.items||[]);
   const b=document.createElement('button'); b.type='button';
   const found = searching && matchSet && matchSet.has(code);
-  b.className='cell'+(found?' found':st!=='free'?' '+st:'')+(code===selected?' sel':'')+(matchSet && !matchSet.has(code)?' dim':'');
+  const pk = !found && window.pkMapSet && window.pkMapSet.has(code);
+  b.className='cell'+(found?' found':pk?' pick':st!=='free'?' '+st:'')+(code===selected?' sel':'')+(matchSet && !matchSet.has(code)?' dim':'');
+  if(pk && window.pkMapNum){ const n=window.pkMapNum.get(code); if(n) b.dataset.pkn=n;
+    const cs=window.pkMapColor?.get(code)||[];
+    if(cs.length===1) b.style.background=cs[0];
+    else if(cs.length>1) b.style.background=`repeating-linear-gradient(135deg,${cs.map((c,i)=>`${c} ${i*7}px ${(i+1)*7}px`).join(',')})`;
+    if(cs.length>1) b.title+=' · ubicación compartida entre documentos'; }
   const tot = it.reduce((a,x)=>a+(+x.cant||0),0);
   b.innerHTML = `<span></span><b></b>`;
   b.children[0].textContent=label;
@@ -4971,6 +5219,12 @@ function renderDrawer(){
     if(canWrite){ const mv=document.createElement('button'); mv.type='button'; mv.className='btn'; mv.textContent='Mover'; mv.onclick=()=>startMove(selected,i); acts.append(mv); }
     const t=document.createElement('button'); t.type='button'; t.className='btn tarja'; t.textContent='Generar tarja'; t.onclick=()=>openTarja(selected,i);
     acts.append(t);
+    // historial de salidas por picking de este lote (hasta que se acabe)
+    const hb=document.createElement('button'); hb.type='button'; hb.className='btn hist';
+    let nh=0; try{ nh=pkLogFor(it.sku, it.lote, it.cont).length; }catch(e){}
+    hb.textContent = nh ? `Historial (${nh})` : 'Historial';
+    hb.onclick=()=>openHist({mode:'lote', sku:it.sku, lote:it.lote, cont:it.cont, desc:it.desc, venc:it.venc, und:it.und});
+    acts.append(hb);
     list.appendChild(el);
   });
   form.hidden = !canWrite;
@@ -5690,10 +5944,21 @@ function tarjaData(code, it){
    Con la cámara normal del celular abre la ficha; "Mover con QR" sigue leyendo el RG del enlace.
    FICHA_URL: dejar vacío para usar la misma dirección donde está publicada la app. */
 const FICHA_URL = '';
+// Dirección de la ficha: 1) FICHA_URL fija; 2) la misma página publicada (https); 3) la guardada en este equipo.
+// Si la app se abre como archivo (sin internet / desde descargas), pide la dirección una vez y la recuerda:
+// sin dirección completa el QR solo trae texto y el celular no abre la ficha.
+let _fichaPedida=false;
 function fichaBase(){
-  if(FICHA_URL) return FICHA_URL;
-  try{ if(/^https?:$/.test(location.protocol)) return new URL('ficha.html', location.href).href.split('?')[0].split('#')[0]; }catch(e){}
-  return 'ficha.html';
+  const limpia=u=>String(u||'').trim().split('?')[0].split('#')[0];
+  if(FICHA_URL) return limpia(FICHA_URL);
+  try{ if(/^https?:$/.test(location.protocol)) return limpia(new URL('ficha.html', location.href).href); }catch(e){}
+  let g=''; try{ g=localStorage.getItem('quinta_ficha_url')||''; }catch(e){}
+  if(!/^https?:\/\//i.test(g) && !_fichaPedida && typeof prompt==='function'){
+    _fichaPedida=true;
+    const r=prompt('Para que el QR abra la ficha del producto, pega la dirección publicada de ficha.html\n(ej: https://usuario.github.io/repositorio/ficha.html)', g);
+    if(r && /^https?:\/\//i.test(r.trim())){ g=limpia(r); if(!/\.html$/i.test(g)) g=g.replace(/\/?$/,'/ficha.html'); try{ localStorage.setItem('quinta_ficha_url',g); }catch(e){} }
+  }
+  return /^https?:\/\//i.test(g) ? g : 'ficha.html';
 }
 function fichaUrl(d, campos){
   const q=new URLSearchParams(), ok=v=>v!=null && String(v).trim()!=='' && v!=='—';
@@ -6147,6 +6412,7 @@ scanZoom.oninput=()=>{ const tr=scanStream?.getVideoTracks()[0]; tr?.applyConstr
 scanTorch.onclick=()=>{ const tr=scanStream?.getVideoTracks()[0]; if(!tr) return; const on=scanTorch.getAttribute('aria-pressed')!=='true';
   tr.applyConstraints({advanced:[{torch:on}]}).then(()=>scanTorch.setAttribute('aria-pressed',String(on))).catch(()=>{}); };
 function closeScanner(){
+  if(typeof scanMode!=='undefined' && scanMode!=='move'){ scanMode='move'; const t=document.getElementById('scanTitle'); if(t) t.textContent='Mover con QR'; }
   scanRun++; scanStream?.getTracks().forEach(t=>t.stop()); scanStream=null; scanVideo.srcObject=null; scanEl.hidden=true;
 }
 async function scanFrame(n){
@@ -6170,6 +6436,7 @@ async function scanLoop(id){
   }
 }
 function onScanned(txt){
+  if(scanMode==='pick') return onScannedPick(txt);
   const m=/RG\d{8}/.exec(String(txt).toUpperCase());
   if(!m){ if(scanLastBad!==txt){ scanLastBad=txt; scanSay('Ese QR no tiene contenedor RG. Escanea el QR de la tarja del pallet.',true); } return false; }
   const rg=m[0], f=findByRG(rg);
@@ -6190,6 +6457,683 @@ btnQrMove.onclick=()=>{
 scanClose.onclick=closeScanner;
 addEventListener('keydown',e=>{ if(e.key==='Escape' && !scanEl.hidden) closeScanner(); });
 document.addEventListener('visibilitychange',()=>{ if(document.hidden && !scanEl.hidden) closeScanner(); });
+
+/* ===================== PICKING (FEFO) ===================== */
+// Se carga el JSON de picking. Para cada línea la app sugiere el pallet que vence primero (FEFO).
+// Se escanea el QR de la tarja (o se toca "Pickear" en la sugerencia), se ingresa la cantidad y se descuenta
+// del stock de la ubicación. Cada salida queda registrada para la trazabilidad (Excel de movimientos de picking).
+const PICK_KEY='bodega3d_picking_v1';
+const pk$ = id => document.getElementById(id);
+const PK_EMPAQUE_UND=['CAJAS','SACOS'];          // unidades de stock que se cuentan en envases, no en kilos/litros
+const pkNum = v => { const n=+String(v??'').trim().replace(',','.'); return isFinite(n)?n:0; };
+const r3 = n => Math.round((+n||0)*1000)/1000;
+const pkEsc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let pick=null, pq=null, pkOpen=new Set();
+try{ pick=JSON.parse(localStorage.getItem(PICK_KEY)||'null'); if(pick && !Array.isArray(pick.lines)) pick=null; }catch(e){ pick=null; }
+function pickSave(){ try{ localStorage.setItem(PICK_KEY, JSON.stringify(pick)); }catch(e){ toast('No se pudo guardar el avance del picking en este equipo.'); } }
+
+function pickParse(j){
+  if(!j || !Array.isArray(j.items) || !j.items.length) throw new Error('El archivo no es un picking: no trae la lista "items".');
+  const lines=j.items.map((x,i)=>{
+    const cantidad=pkNum(x.cantidad), formato=pkNum(x.formato)||pkNum(x.ue)||0;
+    return {id: x.id ?? i+1, documento:String(x.documento||j.documento||'').trim(), area:String(x.area||'').trim(), familia:String(x.familia||'').trim(),
+      sku:String(x.sku??'').trim().replace(/\.0$/,''), desc:String(x.descripcion||x.desc||'').trim(),
+      cantidad, empaque:String(x.empaque||'').trim().toUpperCase(), formato,
+      transferir: r3(pkNum(x.transferir) || cantidad*(formato||1)), pick:0};
+  }).map(l=>{ const a=(pkEquiv[l.sku]||[]).filter(x=>x && x!==l.sku); if(a.length) l.alt=[...new Set(a)]; return l;
+  }).filter(l=>l.sku);
+  if(!lines.length) throw new Error('El picking no trae productos con SKU.');
+  const docs=(j.documentos||[]).map(d=>String(d.id||d)).filter(Boolean);
+  lines.forEach(l=>{ if(l.documento && !docs.includes(l.documento)) docs.push(l.documento); });
+  return {id:String(j.pickingId||('PICK-'+stamp())), fecha:String(j.fecha||''), creado:String(j.fechaCreacion||''), docs,
+    data:j, lines, movs:[], cargado:new Date().toISOString(), exportado:false, doc:'', hideDone:false,
+    colors:Object.fromEntries(docs.map((d,i)=>[d, PK_COLORES[i%PK_COLORES.length]]))};
+}
+/* ---- unidades: el picking pide en kilos/litros/unidades ("transferir"); si el pallet está en CAJAS o SACOS se convierte con el formato ---- */
+const pkPorEnvase = (und, l) => PK_EMPAQUE_UND.includes(String(und||'').toUpperCase()) && l.formato>0;
+const pkToBase = (q, und, l) => pkPorEnvase(und,l) ? r3(q*l.formato) : r3(q);
+const pkFromBase = (q, und, l) => pkPorEnvase(und,l) ? r3(q/l.formato) : r3(q);
+const pkPend = l => Math.max(0, r3(l.transferir - l.pick));
+function pkEstado(l){
+  if(l.pick >= l.transferir - 1e-6) return 'Completo';
+  if(l.pick > 0) return 'Parcial';
+  return pkStockLine(l).some(c=>itemStatus(c.it)!=='exp') ? 'Pendiente' : 'Sin';
+}
+const PK_ESTADO_TXT={Completo:'Completo',Parcial:'Parcial',Pendiente:'Pendiente',Sin:'Sin stock'};
+/* ---- stock del SKU ordenado por vencimiento (FEFO): primero el que vence antes; sin vencimiento al final ---- */
+function pkStock(sku){
+  const out=[];
+  data.forEach((v,code)=>{ if(!SLOT_BY_CODE.has(code)) return;
+    (v.items||[]).forEach(it=>{ if(String(it.sku??'').trim().replace(/\.0$/,'')===sku && pkNum(it.cant)>0) out.push({code,it,key:itemKey(it)}); }); });
+  out.sort((a,b)=>(a.it.venc?0:1)-(b.it.venc?0:1) || String(a.it.venc||'').localeCompare(String(b.it.venc||''))
+    || String(a.it.ingreso||'').localeCompare(String(b.it.ingreso||'')) || a.code.localeCompare(b.code));
+  return out;
+}
+const pkFirst = list => list.find(c=>itemStatus(c.it)!=='exp') || null;
+/* ---- SKU equivalentes: mismo producto de otro proveedor con otro SKU. Se usan cuando el SKU pedido no tiene stock:
+   primero se consume el stock del SKU pedido (FEFO) y después el de los equivalentes (FEFO). ---- */
+const EQUIV_KEY='bodega3d_equivalencias';
+let pkEquiv={}; try{ pkEquiv=JSON.parse(localStorage.getItem(EQUIV_KEY)||'{}')||{}; }catch(e){ pkEquiv={}; }
+function pkEquivSave(){ try{ localStorage.setItem(EQUIV_KEY, JSON.stringify(pkEquiv)); }catch(e){} }
+const pkSkuOf = it => String(it?.sku??'').trim().replace(/\.0$/,'');
+const pkSkus = l => [l.sku, ...(l.alt||[])];
+const pkLineHas = (l, sku) => pkSkus(l).includes(sku);
+const pkStockLine = l => pkSkus(l).flatMap(s=>pkStock(s));
+/* ---- ruta de picking: los pallets a sacar (FEFO) ordenados por ubicación, de adelante hacia atrás:
+   rack F → filas A a E → piso → Refrigerado → Congelado; dentro de cada fila por posición y nivel ---- */
+const PK_RUTA_FILA=['F','A','B','C','D','E','P','RA','RS','CA'];
+function pkRutaOrden(a,b){
+  const sa=SLOT_BY_CODE.get(a), sb=SLOT_BY_CODE.get(b);
+  const fa=PK_RUTA_FILA.indexOf(sa.fila), fb=PK_RUTA_FILA.indexOf(sb.fila);
+  return (fa<0?99:fa)-(fb<0?99:fb) || sa.pos-sb.pos || sa.nivel-sb.nivel || a.localeCompare(b);
+}
+/* Colores por documento: cada operario toma un documento y ve sus ubicaciones de ese color en el mapa */
+const PK_COLORES=['#38bdf8','#a855f7','#ec4899','#84cc16','#6366f1','#2dd4bf','#f472b6','#0ea5e9'];
+function pkColor(doc){
+  if(!pick) return PK_COLORES[0];
+  if(!pick.colors) pick.colors={};
+  if(!pick.colors[doc]){ const usados=Object.values(pick.colors); pick.colors[doc]=PK_COLORES.find(c=>!usados.includes(c)) || PK_COLORES[usados.length%PK_COLORES.length]; }
+  return pick.colors[doc];
+}
+/* Plan: cada línea pendiente toma pallets en orden FEFO. Los documentos se asignan uno tras otro sobre el saldo
+   que queda de cada pallet, así cada documento tiene sus propios pallets; si un pallet abastece a dos documentos,
+   la ubicación queda marcada como compartida. */
+function pkPlan(){
+  if(!pick) return {stops:[], faltan:[]};
+  const rest=new Map(), stops=new Map(), faltan=[], cache=new Map();
+  const orden=pick.lines.map((l,i)=>i).filter(i=>pkPend(pick.lines[i])>0)
+    .sort((a,b)=>pick.docs.indexOf(pick.lines[a].documento)-pick.docs.indexOf(pick.lines[b].documento) || a-b);
+  orden.forEach(i=>{
+    const l=pick.lines[i]; let need=pkPend(l);
+    const ck=pkSkus(l).join('+');
+    if(!cache.has(ck)) cache.set(ck, pkStockLine(l).filter(c=>itemStatus(c.it)!=='exp'));
+    for(const c of cache.get(ck)){
+      if(need<=1e-6) break;
+      const und=String(c.it.und||'').toUpperCase();
+      if(!rest.has(c.key)) rest.set(c.key, pkNum(c.it.cant));
+      const saldo=rest.get(c.key); if(saldo<=1e-6) continue;
+      const takeB=r3(Math.min(pkToBase(saldo,und,l), need)), take=pkFromBase(takeB,und,l);
+      rest.set(c.key, r3(saldo-take)); need=r3(need-takeB);
+      const k=l.documento+'|'+c.key;
+      if(!stops.has(k)) stops.set(k,{doc:l.documento, code:c.code, key:c.key, it:c.it, sku:l.sku, take:0, takeB:0, lines:[]});
+      const st=stops.get(k); st.take=r3(st.take+take); st.takeB=r3(st.takeB+takeB); st.lines.push(i);
+    }
+    if(need>1e-6) faltan.push({doc:l.documento, sku:l.sku, desc:l.desc, falta:need, i});
+  });
+  const out=[...stops.values()], porCode=new Map();
+  out.forEach(st=>{ if(!porCode.has(st.code)) porCode.set(st.code,new Set()); porCode.get(st.code).add(st.doc); });
+  out.forEach(st=>{ st.comparte=[...porCode.get(st.code)].filter(d=>d!==st.doc); });
+  out.sort((a,b)=>pkRutaOrden(a.code,b.code) || String(a.it.venc||'').localeCompare(String(b.it.venc||'')) || pick.docs.indexOf(a.doc)-pick.docs.indexOf(b.doc));
+  return {stops:out, faltan};
+}
+let pkRuta={stops:[], faltan:[]};
+const pkMine = st => !pick || !pick.doc || st.doc===pick.doc;
+window.pkRecalc=function(){
+  pkRuta=pkPlan();
+  const mine=pkRuta.stops.filter(pkMine), num=new Map(), col=new Map(); let n=0;
+  mine.forEach(st=>{ if(!num.has(st.code)) num.set(st.code,++n);
+    if(!col.has(st.code)) col.set(st.code,[]); const c=pkColor(st.doc); if(!col.get(st.code).includes(c)) col.get(st.code).push(c); });
+  window.pkMapSet=new Set(num.keys()); window.pkMapNum=num; window.pkMapColor=col;
+  pkBadge();
+};
+/* franja sobre el mapa: color de cada documento y cuál está tomando este equipo */
+function pkBadge(){
+  const b=pk$('pkBadge'); if(!b) return;
+  if(!pick || !pkRuta.stops.length && pick.lines.every(l=>pkPend(l)===0)){ b.hidden=true; return; }
+  b.hidden=false;
+  b.innerHTML=`<b>Picking</b>`+pick.docs.map(d=>{
+    const n=new Set(pkRuta.stops.filter(st=>st.doc===d).map(st=>st.code)).size;
+    return `<button type="button" class="pk-bd ${pick.doc===d?'on':''} ${pick.doc&&pick.doc!==d?'off':''}" data-pkdoc="${pkEsc(d)}"><i style="background:${pkColor(d)}"></i>${pkEsc(d)} <small>${n}</small></button>`;
+  }).join('')+(pick.doc?`<button type="button" class="pk-bd" data-pkdoc="">Ver todos</button>`:'');
+}
+function pkSetDoc(d){ if(!pick) return; pick.doc=d; pickSave(); pkRefreshMap(); renderPick(); }
+function pkRefreshMap(){ window.pkRecalc(); try{ paintSlots(); renderElev(); }catch(e){} }
+const pkVence = it => it.venc ? `${fmtDate(it.venc)} (${daysTxt(it)})` : 'sin vencimiento';
+
+/* ---------- ventana de picking ---------- */
+function pkUpdateCount(){
+  const c=pk$('pkCount'); if(!c) return;
+  c.textContent = pick ? String(pick.lines.filter(l=>pkPend(l)>0).length || '✓') : '';
+}
+function renderPick(){
+  pkUpdateCount();
+  const has=!!pick;
+  pk$('pkEmpty').hidden=has; pk$('pkBody').hidden=!has;
+  ['pkNew','pkJson','pkXls','pkScan'].forEach(id=>pk$(id).hidden=!has);
+  if(!has) return;
+  const L=pick.lines, done=L.filter(l=>pkPend(l)===0).length;
+  const totT=L.reduce((a,l)=>a+l.transferir,0), totP=L.reduce((a,l)=>a+Math.min(l.pick,l.transferir),0);
+  pk$('pkHead').innerHTML=`<span class="id">${pkEsc(pick.id)}</span>`+
+    (pick.fecha?`<span>Fecha <b>${pkEsc(fmtDate(pick.fecha))}</b></span>`:'')+
+    `<span>Líneas <b>${done}/${L.length}</b> completas</span><span>Movimientos <b>${pick.movs.length}</b></span>`+
+    `<span>Avance <b>${totT?Math.round(totP/totT*100):0}%</b></span>`;
+  pk$('pkBarFill').style.width=(totT?Math.min(100,totP/totT*100):0)+'%';
+  const sel=pk$('pkDoc'), cur=pick.doc||'';
+  sel.innerHTML=`<option value="">Todos los documentos (${L.length})</option>`+pick.docs.map(d=>{
+    const ls=L.filter(l=>l.documento===d), dn=ls.filter(l=>pkPend(l)===0).length;
+    return `<option value="${pkEsc(d)}">${pkEsc(d)} · ${dn}/${ls.length}</option>`; }).join('');
+  sel.value=pick.docs.includes(cur)?cur:'';
+  pk$('pkHideDone').checked=!!pick.hideDone;
+  const vista=pick.view||'ruta';
+  pk$('pkView').value=vista;
+  pk$('pkDoc').hidden = true;
+  pk$('pkDocs').innerHTML='<span>Estoy pickeando:</span>'+`<button type="button" class="pk-bd ${!pick.doc?'on':''}" data-pkdoc="">Todos</button>`+
+    pick.docs.map(d=>{ const ls=L.filter(l=>l.documento===d), dn=ls.filter(l=>pkPend(l)===0).length;
+      return `<button type="button" class="pk-bd ${pick.doc===d?'on':''}" data-pkdoc="${pkEsc(d)}"><i style="background:${pkColor(d)}"></i>${pkEsc(d)} <small>${dn}/${ls.length}</small></button>`; }).join('');
+  pk$('pkHideDone').closest('label').hidden = vista==='ruta';
+  if(vista==='ruta'){
+    window.pkRecalc();
+    const stops=pkRuta.stops.filter(pkMine), faltan=pkRuta.faltan.filter(pkMine);
+    const nota=`<li class="pk-ruta-note"><i style="background:${pick.doc?pkColor(pick.doc):'#38bdf8'}"></i>${pick.doc?`Ruta de <b>${pkEsc(pick.doc)}</b>`:'Ruta de <b>todos los documentos</b>'}, de adelante hacia atrás: rack F → filas A a E → piso → Refrigerado → Congelado. En el mapa cada documento tiene su color y cada ubicación su número de parada; las rayadas son compartidas entre documentos.</li>`;
+    const htmlStops=stops.map((st,n)=>{
+      const it=st.it, docs=st.doc, num=window.pkMapNum?.get(st.code)||n+1, col=pkColor(st.doc);
+      const comp=st.comparte.length?`<span class="pk-comp">Compartida con ${pkEsc(st.comparte.join(', '))}</span>`:'';
+      return `<li class="pk-stop ${n===0?'next':''}" style="border-left-color:${col}"><div class="pk-stopn" style="background:${col};color:#fff">${num}</div>
+        <div><div class="u">${pkEsc(st.code)}${n===0?'<small>Siguiente</small>':''}${comp}</div>
+          <div class="d">${pkEsc(it.desc||'SKU '+st.sku)}${pkSkuOf(it)!==st.sku?`<span class="pk-comp" style="background:#6366f1">Equivalente de SKU ${pkEsc(st.sku)}</span>`:''}</div>
+          <div class="s">${pkEsc(it.cont||'sin RG')} · SKU ${pkEsc(pkSkuOf(it))} · lote ${pkEsc(it.lote||'—')} · vence ${pkEsc(pkVence(it))} · hay ${fmtQty(it.cant)} ${pkEsc(it.und||'')}</div>
+          <div class="s"><span class="pk-dot" style="background:${col}"></span>Para: <b>${pkEsc(docs)}</b></div></div>
+        <div class="pk-take"><div class="q">${fmtQty(st.take)} <small>${pkEsc(it.und||'')}</small></div>
+          <button class="btn" type="button" data-pkmap="${pkEsc(st.code)}">Ver en mapa</button>
+          <button class="btn" type="button" data-pkman="${st.lines.find(i=>pkPend(pick.lines[i])>0) ?? st.lines[0]}" data-code="${pkEsc(st.code)}" data-key="${pkEsc(st.key)}">Pickear sin QR</button></div></li>`;
+    }).join('');
+    const htmlFalta=faltan.map(f=>`<li class="pk-falta"><div><b>${pkEsc(f.desc||'SKU '+f.sku)}</b> (SKU ${pkEsc(f.sku)}, ${pkEsc(f.doc)}): faltan ${fmtQty(f.falta)} sin stock vigente en la bodega.</div><button class="btn" type="button" data-pkalt="${f.i}">Usar SKU equivalente</button></li>`).join('');
+    pk$('pkLines').innerHTML = nota + (stops.length ? htmlStops : `<li class="pk-empty">${pick.lines.every(l=>pkPend(l)===0)?'Picking completo: no quedan ubicaciones por visitar.':'No hay pallets disponibles para lo pendiente.'}</li>`) + htmlFalta;
+    return;
+  }
+  const ord={Pendiente:0,Parcial:0,Sin:1,Completo:2};
+  const rows=L.map((l,i)=>({l,i,st:pkEstado(l)}))
+    .filter(r=>(!sel.value || r.l.documento===sel.value) && !(pick.hideDone && r.st==='Completo'))
+    .sort((a,b)=>ord[a.st]-ord[b.st] || a.i-b.i);
+  pk$('pkLines').innerHTML = rows.length ? rows.map(({l,i,st})=>{
+    const stock=pkStockLine(l), first=pkFirst(stock), open=pkOpen.has(i);
+    const und=first?.it.und || '';
+    const next = st==='Completo' ? '' : first
+      ? `<div class="pk-next">Sacar primero: <b>${pkEsc(first.code)}</b> · ${pkEsc(first.it.cont||'sin RG')} · lote ${pkEsc(first.it.lote||'—')} · vence <b>${pkEsc(fmtDate(first.it.venc))}</b> · hay ${fmtQty(first.it.cant)} ${pkEsc(first.it.und||'')}</div>`
+      : `<div class="pk-next none">${stock.length?'Solo hay pallets vencidos de este SKU: no despachar.':'No hay stock de este SKU en la bodega.'} <span class="pk-altlink" role="button" tabindex="0" data-pkalt="${i}">Usar SKU equivalente</span></div>`;
+    let sug='';
+    if(open){
+      sug=`<div class="pk-sug"><h4>Pallets de este SKU por orden de salida (FEFO) <span class="pk-altlink" role="button" tabindex="0" data-pkalt="${i}">${l.alt?.length?'Editar':'Usar'} SKU equivalente</span></h4>`+(stock.length ? stock.slice(0,8).map((c,n)=>{
+        const ex=itemStatus(c.it)==='exp', isF=first && c.key===first.key;
+        const tag = ex?'<span class="pk-tag exp">Vencido</span>' : isF?'<span class="pk-tag">Sacar primero</span>' : itemStatus(c.it)==='soon'?'<span class="pk-tag soon">Por vencer</span>':'';
+        return `<div class="pk-pal ${ex?'exp':isF?'first':''}"><span class="n">${n+1}</span>
+          <div><span class="u">${pkEsc(c.code)}</span> · ${pkEsc(c.it.cont||'sin RG')}${tag}<br>
+          <span class="m">Lote ${pkEsc(c.it.lote||'—')} · vence ${pkEsc(pkVence(c.it))} · ${fmtQty(c.it.cant)} ${pkEsc(c.it.und||'')}</span></div>
+          ${ex||st==='Completo'?'':`<button class="btn" type="button" data-pkman="${i}" data-code="${pkEsc(c.code)}" data-key="${pkEsc(c.key)}">Pickear sin QR</button>`}</div>`;
+      }).join('') + (stock.length>8?`<div class="pk-empty">… y ${stock.length-8} pallets más</div>`:'') : '<div class="pk-empty">Sin pallets registrados.</div>')+'</div>';
+    }
+    const qty = `${fmtQty(l.pick)} / ${fmtQty(l.transferir)}<small>${fmtQty(l.cantidad)} ${pkEsc(l.empaque.toLowerCase()||'env.')}${l.formato?` × ${fmtQty(l.formato)}`:''}</small>`;
+    return `<li class="pk-line ${st}"><button class="pk-row" type="button" data-pkline="${i}" aria-expanded="${open}">
+      <div><div class="d">${pkEsc(l.desc||'SKU '+l.sku)}<span class="pk-st">${PK_ESTADO_TXT[st]}</span></div>
+      <div class="s"><span class="pk-dot" style="background:${pkColor(l.documento)}"></span>SKU ${pkEsc(l.sku)}${l.alt?.length?` <span class="pk-eq">+ equiv. ${pkEsc(l.alt.join(', '))}</span>`:''} · ${pkEsc(l.documento)}${l.area&&l.area!==l.documento?' · '+pkEsc(l.area):''}${l.familia?' · '+pkEsc(l.familia):''}</div></div>
+      <div class="q">${qty}</div>${next}</button>${sug}</li>`;
+  }).join('') : '<li class="pk-empty">No hay líneas para mostrar con este filtro.</li>';
+}
+pk$('pkLines').addEventListener('click',e=>{
+  const alt=e.target.closest('[data-pkalt]');
+  if(alt){ e.stopPropagation(); openPs(+alt.dataset.pkalt); return; }
+  const mp=e.target.closest('[data-pkmap]');
+  if(mp){ const code=mp.dataset.pkmap, sl=SLOT_BY_CODE.get(code); pk$('pModal').hidden=true;
+    try{ if(sl) selectFila(sl.fila,true); openSlot(code); }catch(err){} toast(`Parada en ${code}`); return; }
+  const man=e.target.closest('[data-pkman]');
+  if(man){ openPq(man.dataset.code, man.dataset.key, 'Manual', +man.dataset.pkman); return; }
+  const row=e.target.closest('[data-pkline]'); if(!row) return;
+  const i=+row.dataset.pkline; pkOpen.has(i)?pkOpen.delete(i):pkOpen.add(i); renderPick();
+});
+pk$('pkDocs').addEventListener('click',e=>{ const c=e.target.closest('[data-pkdoc]'); if(c) pkSetDoc(c.dataset.pkdoc); });
+pk$('pkBadge').addEventListener('click',e=>{ const c=e.target.closest('[data-pkdoc]'); if(c){ pkSetDoc(c.dataset.pkdoc); toast(c.dataset.pkdoc?`Mostrando ubicaciones de ${c.dataset.pkdoc}`:'Mostrando todos los documentos'); } else openPick(); });
+pk$('pkView').onchange=()=>{ if(!pick) return; pick.view=pk$('pkView').value; pickSave(); renderPick(); };
+pk$('pkDoc').onchange=()=>pkSetDoc(pk$('pkDoc').value);
+pk$('pkHideDone').onchange=()=>{ if(!pick) return; pick.hideDone=pk$('pkHideDone').checked; pickSave(); renderPick(); };
+function openPick(){ pk$('pkErr').hidden=true; renderPick(); pk$('pModal').hidden=false; }
+pk$('btnPick').onclick=openPick;
+pk$('pkClose').onclick=()=>{ pk$('pModal').hidden=true; };
+pk$('pModal').addEventListener('click',e=>{ if(e.target===pk$('pModal')) pk$('pModal').hidden=true; });
+pk$('pkNew').onclick=()=>pk$('pkFile').click();
+pk$('pkFile').onchange=async ev=>{
+  const f=ev.target.files[0]; ev.target.value=''; if(!f) return;
+  const err=pk$('pkErr'); err.hidden=true;
+  try{
+    const nuevo=pickParse(JSON.parse(await f.text()));
+    if(pick && pick.id===nuevo.id && pick.movs.length){
+      err.textContent=`El picking ${nuevo.id} ya está cargado con ${pick.movs.length} movimientos; se mantiene el avance.`; err.hidden=false; return;
+    }
+    // si el picking anterior tiene salidas sin exportar, se descarga su Excel antes de reemplazarlo
+    if(pick && pick.movs.length && !pick.exportado){ await exportPickExcel(true); }
+    pick=nuevo; pkOpen=new Set(); pickSave(); renderPick(); pkRefreshMap();
+    toast(`Picking ${pick.id} cargado: ${pick.lines.length} líneas`);
+  }catch(e){ err.textContent=e instanceof SyntaxError ? 'El archivo no es un JSON válido.' : (e.message||'No se pudo leer el archivo.'); err.hidden=false; }
+};
+
+/* ---------- escaneo ---------- */
+let scanMode='move';
+pk$('pkScan').onclick=()=>{
+  if(!canWrite){ toast('Tu acceso es de solo lectura: no puedes descontar stock.'); return; }
+  if(moveCtx) cancelMove();
+  scanMode='pick'; pk$('scanTitle').textContent='Picking con QR';
+  openScanner();
+};
+function onScannedPick(txt){
+  const m=/RG\d{8}/.exec(String(txt).toUpperCase());
+  if(!m){ if(scanLastBad!==txt){ scanLastBad=txt; scanSay('Ese QR no tiene contenedor RG. Escanea el QR de la tarja del pallet.',true); } return false; }
+  const rg=m[0], f=findByRG(rg);
+  if(!f){ if(scanLastBad!==rg){ scanLastBad=rg; scanSay(`El contenedor ${rg} no está registrado en ninguna ubicación.`,true); } return false; }
+  const it=data.get(f.code).items[f.i], sku=String(it.sku??'').trim().replace(/\.0$/,'');
+  if(!pick.lines.some(l=>pkLineHas(l,sku))){
+    if(scanLastBad!==rg){ scanLastBad=rg; scanSay(`${rg} es ${it.desc||'SKU '+sku} y no está en este picking.`,true); } return false;
+  }
+  if(pick.doc && !pick.lines.some(l=>pkLineHas(l,sku) && l.documento===pick.doc)){
+    const otros=[...new Set(pick.lines.filter(l=>pkLineHas(l,sku)).map(l=>l.documento))].join(', ');
+    if(scanLastBad!==rg){ scanLastBad=rg; scanSay(`${it.desc||'SKU '+sku} no es de ${pick.doc}: es para ${otros}.`,true); } return false;
+  }
+  scanEl.classList.add('hit'); try{ navigator.vibrate?.(80); }catch(e){}
+  closeScanner();
+  openPq(f.code, itemKey(it), 'QR');
+  return true;
+}
+
+/* ---------- diálogo de cantidad ---------- */
+function pqItem(){ return pq ? (data.get(pq.code)?.items||[]).find(x=>itemKey(x)===pq.key) : null; }
+function openPq(code, key, metodo, lineHint){
+  const it=(data.get(code)?.items||[]).find(x=>itemKey(x)===key);
+  if(!it){ toast('Ese pallet ya no está en la ubicación.'); return; }
+  const sku=String(it.sku??'').trim().replace(/\.0$/,'');
+  window.pkRecalc();
+  let idx=pick.lines.map((l,i)=>i).filter(i=>pkLineHas(pick.lines[i],sku));
+  if(pick.doc && !idx.includes(lineHint)){ const mios=idx.filter(i=>pick.lines[i].documento===pick.doc); if(mios.length) idx=mios; }
+  if(!idx.length){ toast('Ese SKU no está en el picking.'); return; }
+  // línea por defecto: la indicada, si no la primera pendiente del documento filtrado, si no la primera pendiente
+  let li = idx.includes(lineHint) ? lineHint
+    : idx.find(i=>pkPend(pick.lines[i])>0 && (!pick.doc || pick.lines[i].documento===pick.doc))
+    ?? idx.find(i=>pkPend(pick.lines[i])>0) ?? idx[0];
+  pq={code,key,metodo,sku,idx,li,bulEdit:false};
+  pk$('pqLine').innerHTML=idx.map(i=>{ const l=pick.lines[i];
+    return `<option value="${i}">${pkEsc(l.documento)}${l.area&&l.area!==l.documento?' · '+pkEsc(l.area):''} — pendiente ${fmtQty(pkPend(l))} de ${fmtQty(l.transferir)}</option>`; }).join('');
+  pk$('pqLine').value=String(li);
+  pk$('pqLineL').hidden = idx.length<2;
+  pk$('pqForce').checked=false; pk$('pqErr').hidden=true;
+  renderPq(true);
+  pk$('pqModal').hidden=false;
+  setTimeout(()=>{ try{ pk$('pqCant').focus(); pk$('pqCant').select(); }catch(e){} },60);
+}
+function renderPq(resetQty){
+  const it=pqItem(); if(!it) return;
+  const l=pick.lines[pq.li], und=String(it.und||'').toUpperCase(), stock=pkNum(it.cant);
+  pk$('pqInfo').innerHTML=`<dt>Producto</dt><dd class="big">${pkEsc(it.desc||l.desc)}</dd><dt>SKU</dt><dd>${pkEsc(it.sku)}${pkSkuOf(it)!==l.sku?` <span class="pk-comp" style="background:#6366f1">Equivalente de ${pkEsc(l.sku)} ${pkEsc(l.desc)}</span>`:''}</dd>
+    <dt>Contenedor</dt><dd>${pkEsc(it.cont||'—')}</dd><dt>Ubicación</dt><dd>${pkEsc(pq.code)}</dd>
+    <dt>Lote</dt><dd>${pkEsc(it.lote||'—')}</dd><dt>Vencimiento</dt><dd>${pkEsc(pkVence(it))}</dd>
+    <dt>Stock del pallet</dt><dd>${fmtQty(stock)} ${pkEsc(it.und||'')}${it.cajas!==''&&it.cajas!=null?` · ${fmtQty(it.cajas)} cajas`:''}</dd>
+    <dt>Pedido</dt><dd>${fmtQty(l.cantidad)} ${pkEsc(l.empaque.toLowerCase())}${l.formato?` × ${fmtQty(l.formato)}`:''} = ${fmtQty(l.transferir)} · pendiente <b>${fmtQty(pkPend(l))}</b></dd>`;
+  // validación FEFO
+  const first=pkFirst(pkStockLine(l)), exp=itemStatus(it)==='exp';
+  pq.exp=exp;
+  // si hay plan para el documento de la línea, se valida contra los pallets asignados a ese documento
+  const plan=pkRuta.stops.filter(st=>st.doc===l.documento && st.sku===l.sku);
+  const ref = plan.length ? plan[0] : first;
+  pq.fefoOk = !ref || ref.key===pq.key || String(ref.it.venc||'')===String(it.venc||'');
+  const mio=plan.find(st=>st.key===pq.key); pq.planTake = mio ? mio.take : null;
+  pq.sugerido = ref ? `${ref.it.cont||'sin RG'} en ${ref.code} (vence ${fmtDate(ref.it.venc)})` : '';
+  const fb=pk$('pqFefo');
+  if(exp){ fb.className='pq-warn bad'; fb.innerHTML=`<b>Pallet vencido</b> (${pkEsc(daysTxt(it))}). No se puede despachar a producción.`; }
+  else if(pq.fefoOk){ fb.className='pq-ok'; fb.innerHTML = pq.planTake!=null
+      ? `<b>Cumple FEFO.</b> Pallet asignado a <b>${pkEsc(l.documento)}</b>: sacar <b>${fmtQty(pq.planTake)} ${pkEsc(it.und||'')}</b>.`
+      : '<b>Cumple FEFO:</b> es el pallet que vence primero para este SKU.'; }
+  else { fb.className='pq-warn'; fb.innerHTML=`<b>No cumple FEFO.</b> Este pallet vence el ${pkEsc(fmtDate(it.venc))}. Para ${pkEsc(l.documento)} corresponde sacar <b>${pkEsc(ref.it.cont||'sin RG')}</b> en <b>${pkEsc(ref.code)}</b> (vence ${pkEsc(fmtDate(ref.it.venc))}, lote ${pkEsc(ref.it.lote||'—')}).`; }
+  pk$('pqForceL').hidden = exp || pq.fefoOk;
+  pk$('pqUnd').textContent = it.und ? `(${it.und})` : '';
+  if(resetQty){
+    const pendU=pkFromBase(pkPend(l), und, l);
+    let q=r3(Math.min(stock, pendU>0?pendU:stock));
+    if(pq.planTake!=null && pq.fefoOk) q=r3(Math.min(q, pq.planTake));
+    pk$('pqCant').value = q>0 ? q : '';
+    pq.bulEdit=false; pqBultosAuto();
+  }
+  pqCheck();
+}
+function pqBultosAuto(){
+  if(!pq || pq.bulEdit) return;
+  const it=pqItem(), l=pick.lines[pq.li], q=pkNum(pk$('pqCant').value);
+  const b = pkPorEnvase(it?.und,l) ? q : (l.formato>0 ? r3(q/l.formato) : '');
+  pk$('pqBul').value = q>0 && b!=='' ? b : '';
+}
+function pqCheck(){
+  const it=pqItem(); if(!it) return false;
+  const l=pick.lines[pq.li], q=pkNum(pk$('pqCant').value), stock=pkNum(it.cant), und=String(it.und||'').toUpperCase();
+  let msg='', help='';
+  if(pq.exp) msg='Pallet vencido: no se puede pickear.';
+  else if(!(q>0)) msg='Ingresa la cantidad a pickear.';
+  else if(q>stock+1e-6) msg=`El pallet solo tiene ${fmtQty(stock)} ${it.und||''}.`;
+  else if(!pq.fefoOk && !pk$('pqForce').checked) msg='Para sacar este pallet sin cumplir FEFO, marca la casilla de arriba.';
+  if(q>0){
+    const base=pkToBase(q,und,l), quedan=r3(stock-q), pend=pkPend(l);
+    help=`Quedan ${fmtQty(Math.max(0,quedan))} ${it.und||''} en el pallet${quedan<=1e-6?' (el pallet queda vacío y sale de la ubicación)':''}. `+
+      (pkPorEnvase(und,l)?`Equivale a ${fmtQty(base)} para el picking. `:'')+
+      (base>pend+1e-6 ? `Supera lo pendiente de la línea en ${fmtQty(r3(base-pend))}.` : `Pendiente de la línea después: ${fmtQty(r3(pend-base))}.`);
+  }
+  pk$('pqHelp').textContent=help;
+  pk$('pqErr').textContent=msg; pk$('pqErr').hidden=!msg || !(q>0) && !pq.exp && pk$('pqCant').value==='';
+  pk$('pqOk').disabled=!!msg;
+  return !msg;
+}
+pk$('pqLine').onchange=()=>{ pq.li=+pk$('pqLine').value; renderPq(true); };
+pk$('pqCant').addEventListener('input',()=>{ pqBultosAuto(); pqCheck(); });
+pk$('pqCant').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); pk$('pqOk').click(); } });
+pk$('pqBul').addEventListener('input',()=>{ pq.bulEdit=true; });
+pk$('pqForce').onchange=pqCheck;
+function closePq(){ pk$('pqModal').hidden=true; pq=null; }
+pk$('pqCancel').onclick=closePq;
+pk$('pqModal').addEventListener('click',e=>{ if(e.target===pk$('pqModal')) closePq(); });
+addEventListener('keydown',e=>{ if(e.key!=='Escape') return; if(!pk$('psModal').hidden){ pk$('psModal').hidden=true; ps=null; return; } if(!pk$('pqModal').hidden) closePq(); else if(!pk$('pModal').hidden && scanEl.hidden) pk$('pModal').hidden=true; });
+
+pk$('pqOk').onclick=async ()=>{
+  if(!pq || !pqCheck()) return;
+  if(!canWrite){ toast('Tu acceso es de solo lectura.'); return; }
+  const {code,key}=pq, items=(data.get(code)?.items||[]).map(x=>({...x}));
+  const i=items.findIndex(x=>itemKey(x)===key);
+  if(i<0){ toast('El pallet ya no está en la ubicación; puede que otra persona lo haya movido.'); closePq(); renderPick(); return; }
+  const it=items[i], l=pick.lines[pq.li], und=String(it.und||'').toUpperCase();
+  const q=r3(pkNum(pk$('pqCant').value)), bul=pk$('pqBul').value===''?'':r3(pkNum(pk$('pqBul').value));
+  const antes=pkNum(it.cant), despues=r3(antes-q), agotado=despues<=1e-6, now=new Date().toISOString();
+  const cajasAntes = it.cajas===''||it.cajas==null ? null : pkNum(it.cajas);
+  const cajasDesp = cajasAntes==null ? '' : agotado ? 0 : bul!=='' ? Math.max(0, r3(cajasAntes-bul)) : cajasAntes;
+  if(agotado) items.splice(i,1);
+  else items[i]={...it, id:key, cant:despues, cajas:cajasDesp===''?it.cajas:cajasDesp, mod:now};
+  pk$('pqOk').disabled=true;
+  try{
+    await store.saveMany({[code]:bodyFor(code, items, agotado?[{k:key,t:now}]:[])}, false);
+  }catch(e){ pk$('pqOk').disabled=false; toast(e?.code==='invalid_argument'?'No tienes permiso para descontar stock.':'No se pudo guardar. Intenta de nuevo.'); return; }
+  const base=pkToBase(q,und,l);
+  l.pick=r3(l.pick+base);
+  pick.movs.push({n:pick.movs.length+1, fecha:now, pickingId:pick.id, fechaPicking:pick.fecha, lineaId:l.id,
+    documento:l.documento, area:l.area, familia:l.familia, sku:String(it.sku??''), skuPedido:l.sku, descPedido:l.desc, sustituto:pkSkuOf(it)!==l.sku, desc:it.desc||l.desc,
+    cont:it.cont||'', lote:it.lote||'', venc:it.venc||'', elab:it.elab||'', recep:it.recep||(it.ingreso?String(it.ingreso).slice(0,10):''),
+    oc:it.oc||'', fact:it.fact||'', ubic:code, cant:q, und:it.und||'', bultos:bul, base, cajasAntes, cajasDesp,
+    antes, despues:Math.max(0,despues), agotado, fefo:pq.fefoOk?'Cumple':'No cumple', sugerido:pq.fefoOk?'':pq.sugerido,
+    metodo:pq.metodo, equipo:(typeof DEVICE_ID!=='undefined'?DEVICE_ID:'')});
+  pkLogAdd(pick.movs[pick.movs.length-1]);
+  pick.exportado=false; pickSave();
+  toast(`Pickeado ${fmtQty(q)} ${it.und||''} de ${it.cont||code}${agotado?' · pallet agotado':''}`);
+  const seguir = !agotado && pick.lines.some(x=>pkLineHas(x,pkSkuOf(it)) && pkPend(x)>0 && (!pick.doc || x.documento===pick.doc)) ? {code, key, metodo:pq.metodo} : null;
+  closePq(); pkRefreshMap(); renderPick();
+  if(pk$('pModal').hidden) pk$('pModal').hidden=false;
+  // el mismo pallet abastece otra línea pendiente del mismo producto (otro documento): se ofrece de inmediato
+  if(seguir){ openPq(seguir.code, seguir.key, seguir.metodo); toast('Mismo producto para otro documento: ingresa la cantidad o cancela.'); }
+};
+
+/* ---------- Excel de trazabilidad ---------- */
+const pkDate = s => { if(!s) return ''; const d=isoToDate(String(s)); return d||String(s); };
+function pickWorkbook(){
+  const H_MOV=['N°','Fecha y hora','Picking','Fecha picking','Documento','Área','Familia','SKU pedido','SKU entregado','Sustituto (equivalente)','Descripción','Contenedor','Lote','Vencimiento',
+    'Elaboración','Recepción','Orden de compra','Factura','Ubicación','Cantidad pickeada','Unidad','Bultos','Equivalente picking',
+    'Stock antes','Stock después','Pallet agotado','FEFO','Pallet sugerido (FEFO)','Lectura','Equipo'];
+  const mov=pick.movs.map(m=>({'N°':m.n,'Fecha y hora':new Date(m.fecha),'Picking':m.pickingId,'Fecha picking':pkDate(m.fechaPicking),
+    'Documento':m.documento,'Área':m.area,'Familia':m.familia,'SKU pedido':m.skuPedido||m.sku,'SKU entregado':m.sku,'Sustituto (equivalente)':m.sustituto?'SI':'NO','Descripción':m.desc,'Contenedor':m.cont,'Lote':m.lote,
+    'Vencimiento':pkDate(m.venc),'Elaboración':pkDate(m.elab),'Recepción':pkDate(m.recep),'Orden de compra':m.oc,'Factura':m.fact,
+    'Ubicación':m.ubic,'Cantidad pickeada':m.cant,'Unidad':m.und,'Bultos':m.bultos,'Equivalente picking':m.base,'Stock antes':m.antes,
+    'Stock después':m.despues,'Pallet agotado':m.agotado?'SI':'NO','FEFO':m.fefo,'Pallet sugerido (FEFO)':m.sugerido,
+    'Lectura':m.metodo==='QR'?'QR tarja':'Manual','Equipo':m.equipo}));
+  const res=pick.lines.map(l=>{
+    const ms=pick.movs.filter(m=>m.lineaId===l.id && m.documento===l.documento && (m.skuPedido||m.sku)===l.sku);
+    const uniq=a=>[...new Set(a.filter(Boolean))].join(', ');
+    return {'Documento':l.documento,'Área':l.area,'Familia':l.familia,'SKU':l.sku,'Descripción':l.desc,'SKU equivalentes usados':uniq(ms.filter(m=>m.sustituto).map(m=>m.sku+' '+m.desc)),'Empaque':l.empaque,
+      'Cantidad pedida':l.cantidad,'Formato':l.formato,'A transferir':l.transferir,'Pickeado':l.pick,'Pendiente':pkPend(l),
+      '% cumplimiento':l.transferir?Math.round(Math.min(l.pick,l.transferir)/l.transferir*1000)/10:0,'Estado':PK_ESTADO_TXT[pkEstado(l)],
+      'Lotes':uniq(ms.map(m=>m.lote)),'Vencimientos':uniq(ms.map(m=>fmtDate(m.venc))),'Contenedores':uniq(ms.map(m=>m.cont)),
+      'Ubicaciones':uniq(ms.map(m=>m.ubic)),'Movimientos':ms.length,'FEFO no cumplido':ms.filter(m=>m.fefo!=='Cumple').length};
+  });
+  const lotes=new Map();
+  pick.movs.forEach(m=>{ const k=m.sku+'|'+m.lote+'|'+m.venc+'|'+m.und;
+    if(!lotes.has(k)) lotes.set(k,{'SKU':m.sku,'Descripción':m.desc,'Lote':m.lote,'Vencimiento':pkDate(m.venc),'Cantidad':0,'Unidad':m.und,'Contenedores':new Set(),'Documentos':new Set(),'Movimientos':0});
+    const r=lotes.get(k); r['Cantidad']=r3(r['Cantidad']+m.cant); r['Contenedores'].add(m.cont); r['Documentos'].add(m.documento); r['Movimientos']++; });
+  const lot=[...lotes.values()].map(r=>({...r,'Contenedores':[...r['Contenedores']].filter(Boolean).join(', '),'Documentos':[...r['Documentos']].join(', ')}))
+    .sort((a,b)=>String(a['Descripción']).localeCompare(String(b['Descripción']),'es'));
+  const wb=XLSX.utils.book_new();
+  const ws=sheetFrom(mov.length?mov:[{'N°':'','Fecha y hora':'Sin movimientos todavía'}],[5,17,24,12,14,18,13,10,10,11,38,13,14,12,12,12,12,11,14,10,8,8,11,10,10,9,11,34,10,12],H_MOV);
+  const fi=H_MOV.indexOf('Fecha y hora');
+  for(let r=1;r<=mov.length;r++){ const c=ws[XLSX.utils.encode_cell({r,c:fi})]; if(c && c.t==='d') c.z='dd-mm-yyyy hh:mm'; }
+  XLSX.utils.book_append_sheet(wb, ws, 'Movimientos');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(res,[14,18,13,9,38,30,10,10,8,11,10,10,11,11,22,22,26,24,11,10]), 'Resumen picking');
+  XLSX.utils.book_append_sheet(wb, sheetFrom(lot.length?lot:[{'SKU':'','Descripción':'Sin movimientos todavía'}],[9,38,16,12,10,8,30,24,11]), 'Trazabilidad por lote');
+  wb.Props={Title:'Picking '+pick.id, Author:'Bodega 3D Quinta', CreatedDate:new Date()};
+  return wb;
+}
+async function exportPickExcel(silencioso){
+  if(!pick) return false;
+  if(typeof XLSX==='undefined'){ toast('No se pudo cargar el generador de Excel. Revisa la conexión y vuelve a abrir la página.'); return false; }
+  try{
+    const out=XLSX.write(pickWorkbook(),{bookType:'xlsx',type:'array',cellDates:true});
+    const ok=await saveFile(`picking_${pick.id}${pick.doc?'_'+pick.doc.replace(/[^A-Za-z0-9]+/g,'-'):''}_trazabilidad_${stamp()}.xlsx`, new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+    if(ok){ pick.exportado=true; pickSave(); if(!silencioso) toast('Excel de trazabilidad descargado'); else toast('Se descargó el Excel del picking anterior'); }
+    return ok;
+  }catch(e){ toast('No se pudo generar el Excel.'); return false; }
+}
+pk$('pkXls').onclick=()=>exportPickExcel(false);
+/* JSON del picking con lo pickeado, lotes y vencimientos (mismo formato del archivo original) */
+pk$('pkJson').onclick=async ()=>{
+  if(!pick) return;
+  const j=JSON.parse(JSON.stringify(pick.data||{}));
+  (j.items||[]).forEach((x,n)=>{
+    const l=pick.lines.find(l=>String(l.id)===String(x.id ?? n+1) && l.sku===String(x.sku??'').trim().replace(/\.0$/,'')); if(!l) return;
+    const ms=pick.movs.filter(m=>m.lineaId===l.id && (m.skuPedido||m.sku)===l.sku && m.documento===l.documento);
+    if(l.alt?.length) x.sku_equivalentes=l.alt;
+    const vs=ms.map(m=>m.venc).filter(Boolean).sort();
+    x.pickeado=l.pick; x.pendiente=pkPend(l); x.completado=pkPend(l)===0;
+    x.lote=[...new Set(ms.map(m=>m.lote).filter(Boolean))].join(', ');
+    x.vencimiento=vs[0]||''; x.contenedores=[...new Set(ms.map(m=>m.cont).filter(Boolean))];
+    x.movimientos=ms.map(m=>({fecha:m.fecha, sku:m.sku, sustituto:!!m.sustituto, contenedor:m.cont, ubicacion:m.ubic, lote:m.lote, vencimiento:m.venc, cantidad:m.cant, unidad:m.und, fefo:m.fefo}));
+  });
+  j.estado = pick.lines.every(l=>pkPend(l)===0) ? 'COMPLETADO' : pick.movs.length ? 'EN PROCESO' : 'PENDIENTE';
+  j.actualizado=new Date().toISOString();
+  if(await saveFile(`picking-${pick.id}-actualizado.json`, new Blob([JSON.stringify(j,null,2)],{type:'application/json'}))) toast('JSON del picking descargado');
+};
+
+/* ---------- SKU equivalente (otro proveedor): cuando no hay stock o no alcanza ---------- */
+const pkNorm = t => String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+const PK_STOP=new Set(['KG','GR','GRS','CON','SIN','PARA','DE','DEL','LA','EL','LOS','LAS','BALDE','BOLSA','CAJA','SACO','TARRO','BIDON','UND','UN','LT','CC','ET','ENT','MOL','QUINTA','TOTEM','TOTE']);
+const pkTok = t => pkNorm(t).split(/[^A-Z0-9Ñ]+/).filter(w=>w.length>=3 && !/^\d+$/.test(w) && !PK_STOP.has(w));
+let ps=null;
+function psStockGroups(){
+  const g=new Map();
+  data.forEach((v,code)=>{ if(!SLOT_BY_CODE.has(code)) return; (v.items||[]).forEach(it=>{
+    if(pkNum(it.cant)<=0 || itemStatus(it)==='exp') return; const k=pkSkuOf(it); if(!k) return;
+    if(!g.has(k)) g.set(k,{sku:k, desc:it.desc||master.get(k)?.d||'', total:0, und:it.und||'', pal:0, venc:''});
+    const r=g.get(k); r.total=r3(r.total+pkNum(it.cant)); r.pal++; if(it.venc && (!r.venc || it.venc<r.venc)) r.venc=it.venc; }); });
+  return g;
+}
+function openPs(i){
+  const l=pick?.lines[i]; if(!l) return;
+  ps={i, sku:l.sku}; pk$('psQ').value=''; pk$('psRec').checked=true;
+  renderPs(); pk$('psModal').hidden=false;
+  setTimeout(()=>{ try{ pk$('psQ').focus(); }catch(e){} },60);
+}
+function renderPs(){
+  const l=pick.lines[ps.i], need=pkPend(l);
+  const propio=pkStock(l.sku).filter(c=>itemStatus(c.it)!=='exp').reduce((a,c)=>a+pkToBase(pkNum(c.it.cant),c.it.und,l),0);
+  pk$('psInfo').innerHTML=`<b>${pkEsc(l.desc)}</b> · SKU ${pkEsc(l.sku)}<br>Pendiente en el picking: <b>${fmtQty(need)}</b> · stock vigente de este SKU: <b>${fmtQty(r3(propio))}</b>${propio+1e-6<need?` · <span style="color:var(--exp);font-weight:600">faltan ${fmtQty(r3(need-propio))}</span>`:''}.<br>Se saca primero el SKU pedido y lo que falte se completa con el equivalente, siempre por vencimiento (FEFO). Se aplica a todas las líneas de este SKU en el picking.`;
+  pk$('psCur').innerHTML = l.alt?.length ? `<div class="ps-cur"><span class="m-info">Equivalentes en uso:</span>${l.alt.map(a=>`<span class="ps-chip">${pkEsc(a)} ${pkEsc((master.get(a)?.d||psStockGroups().get(a)?.desc||'').slice(0,34))}<button type="button" data-psdel="${pkEsc(a)}">Quitar</button></span>`).join('')}</div>` : '';
+  const groups=psStockGroups(), q=pkNorm(pk$('psQ').value.trim()), ya=new Set(pkSkus(l)), base=pkTok(l.desc);
+  const row=(sku,desc,g)=>`<li class="ps-it ${g?'':'nostock'}"><div><div class="d">${pkEsc(desc||'SKU '+sku)}</div>
+    <div class="s">SKU ${pkEsc(sku)} · ${g?`stock ${fmtQty(g.total)} ${pkEsc(g.und)} en ${g.pal} pallet${g.pal>1?'s':''} · vence ${pkEsc(fmtDate(g.venc))}`:'sin stock en la bodega'}</div></div>
+    <button class="btn ${g?'primary':''}" type="button" data-psadd="${pkEsc(sku)}">Usar este</button></li>`;
+  let html='';
+  if(!q){
+    // sugeridos: con stock y descripción parecida (la primera palabra del producto pesa doble)
+    const sug=[...groups.values()].filter(g=>!ya.has(g.sku)).map(g=>{ const t=new Set(pkTok(g.desc)); let sc=0; base.forEach((w,k)=>{ if(t.has(w)) sc+=k===0?2:1; }); return {g,sc}; })
+      .filter(x=>x.sc>=2).sort((a,b)=>b.sc-a.sc || b.g.total-a.g.total).slice(0,10);
+    html = sug.length ? '<li class="ps-sec">Sugeridos con stock (descripción parecida)</li>'+sug.map(x=>row(x.g.sku,x.g.desc,x.g)).join('')
+      : '<li class="ps-sec">No encontré productos parecidos con stock. Busca por nombre o SKU.</li>';
+  } else {
+    const hits=new Map();
+    groups.forEach(g=>{ if(!ya.has(g.sku) && pkNorm(g.sku+' '+g.desc).includes(q)) hits.set(g.sku,{sku:g.sku,desc:g.desc,g}); });
+    if(typeof masterIndex!=='undefined') for(const m of masterIndex){ if(hits.size>=40) break; if(!ya.has(m.s) && !hits.has(m.s) && pkNorm(m.s+' '+m.d).includes(q)) hits.set(m.s,{sku:m.s,desc:m.d,g:null}); }
+    const arr=[...hits.values()].sort((a,b)=>(b.g?1:0)-(a.g?1:0) || String(a.desc).localeCompare(String(b.desc),'es')).slice(0,30);
+    html = arr.length ? arr.map(h=>row(h.sku,h.desc,h.g)).join('') : '<li class="ps-sec">Sin resultados.</li>';
+  }
+  pk$('psList').innerHTML=html;
+}
+function psApply(sku, quitar){
+  const orig=ps.sku;
+  pick.lines.forEach(l=>{ if(l.sku!==orig) return; const a=new Set(l.alt||[]); quitar?a.delete(sku):a.add(sku); l.alt=[...a]; if(!l.alt.length) delete l.alt; });
+  if(quitar){ if(pkEquiv[orig]){ pkEquiv[orig]=pkEquiv[orig].filter(x=>x!==sku); if(!pkEquiv[orig].length) delete pkEquiv[orig]; } }
+  else if(pk$('psRec').checked){ pkEquiv[orig]=[...new Set([...(pkEquiv[orig]||[]), sku])]; }
+  pkEquivSave(); pickSave(); pkRefreshMap(); renderPick(); renderPs();
+  toast(quitar ? `Se quitó el SKU ${sku} como equivalente` : `SKU ${sku} agregado como equivalente de ${orig}`);
+}
+pk$('psList').addEventListener('click',e=>{ const b=e.target.closest('[data-psadd]'); if(b) psApply(b.dataset.psadd,false); });
+pk$('psCur').addEventListener('click',e=>{ const b=e.target.closest('[data-psdel]'); if(b) psApply(b.dataset.psdel,true); });
+let psT; pk$('psQ').addEventListener('input',()=>{ clearTimeout(psT); psT=setTimeout(renderPs,150); });
+pk$('psClose').onclick=()=>{ pk$('psModal').hidden=true; ps=null; };
+pk$('psModal').addEventListener('click',e=>{ if(e.target===pk$('psModal')){ pk$('psModal').hidden=true; ps=null; } });
+
+/* ===================== HISTORIAL DE PICKING ===================== */
+// Registro permanente de todas las salidas de picking de este equipo (no se borra al cargar otro picking).
+// Se consulta por día (ventana de picking) o por lote/producto desde la ficha de la ubicación, hasta que el lote se acaba.
+const PK_LOG_KEY='bodega3d_picking_log', PK_LOG_MAX=8000;
+let pkLog=[]; try{ pkLog=JSON.parse(localStorage.getItem(PK_LOG_KEY)||'[]'); if(!Array.isArray(pkLog)) pkLog=[]; }catch(e){ pkLog=[]; }
+const pkLogK = m => `${m.fecha}|${m.cont}|${m.cant}|${m.ubic}`;
+function pkLogSave(){
+  if(pkLog.length>PK_LOG_MAX) pkLog=pkLog.slice(-PK_LOG_MAX);
+  for(let n=0;n<4;n++){ try{ localStorage.setItem(PK_LOG_KEY, JSON.stringify(pkLog)); return; }catch(e){ pkLog=pkLog.slice(Math.floor(pkLog.length/4)); } }
+}
+function pkLogAdd(m){
+  if(!m) return; const k=pkLogK(m); if(pkLog.some(x=>pkLogK(x)===k)) return;
+  pkLog.push({...m, color: pick?.colors?.[m.documento] || ''}); pkLogSave();
+}
+// lo pickeado antes de existir el registro (picking en curso) también entra
+if(pick && pick.movs?.length){ const ks=new Set(pkLog.map(pkLogK)); let add=false;
+  pick.movs.forEach(m=>{ if(!ks.has(pkLogK(m))){ pkLog.push({...m, color:pick.colors?.[m.documento]||''}); add=true; } });
+  if(add){ pkLog.sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))); pkLogSave(); } }
+const pkSkuN = v => String(v??'').trim().replace(/\.0$/,'');
+function pkLogFor(sku, lote, cont){
+  sku=pkSkuN(sku); lote=String(lote||'').trim();
+  return pkLog.filter(m=>pkSkuN(m.sku)===sku && (lote ? String(m.lote||'').trim()===lote : m.cont===cont));
+}
+const pkDia = iso => { const d=new Date(iso); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; };
+const pkHora = iso => { const d=new Date(iso); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+const pkDiaTxt = day => { const [y,m,d]=day.split('-').map(Number); const t=new Date(y,m-1,d).toLocaleDateString('es-CL',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'}); return t.charAt(0).toUpperCase()+t.slice(1); };
+const pkSumUnd = ms => { const u=new Map(); ms.forEach(m=>u.set(m.und||'',r3((u.get(m.und||'')||0)+(+m.cant||0)))); return [...u].map(([k,v])=>`${fmtQty(v)} ${k}`.trim()).join(' + ') || '0'; };
+let ph=null;
+function openHist(o){
+  ph={...o, day: o.day || ''};
+  if(ph.mode==='dia' && !ph.day){ const ds=[...new Set(pkLog.map(m=>pkDia(m.fecha)))].sort(); ph.day=ds[ds.length-1] || pkDia(new Date().toISOString()); }
+  renderHist(); pk$('phModal').hidden=false;
+}
+function phRow(m, showLote){
+  const tags=(m.agotado?'<span class="ph-tag ago">Pallet agotado</span>':'')+(m.fefo&&m.fefo!=='Cumple'?'<span class="ph-tag nf">No FEFO</span>':'')+(m.sustituto?`<span class="ph-tag eq">Equivalente de ${pkEsc(m.skuPedido)}</span>`:'')+(m.metodo==='Manual'?'<span class="ph-tag">Sin QR</span>':'');
+  return `<li class="ph-mv" style="border-left-color:${m.color||'var(--empty)'}"><span class="h">${pkHora(m.fecha)}</span>
+    <div><div class="d">${showLote?`${pkEsc(m.desc)} · `:''}<span class="pk-dot" style="background:${m.color||'var(--empty)'}"></span>${pkEsc(m.documento)}${tags}</div>
+    <div class="s">${pkEsc(m.cont||'sin RG')} · ${pkEsc(m.ubic)} · ${showLote?`SKU ${pkEsc(m.sku)} · <button type="button" class="ph-lote" data-phsku="${pkEsc(m.sku)}" data-phlote="${pkEsc(m.lote||'')}" data-phcont="${pkEsc(m.cont||'')}">lote ${pkEsc(m.lote||'—')}</button> · vence ${pkEsc(fmtDate(m.venc))} · `:''}pallet ${fmtQty(m.antes)} → ${fmtQty(m.despues)} ${pkEsc(m.und||'')} · ${pkEsc(m.pickingId||'')}</div></div>
+    <div class="q">${fmtQty(m.cant)} <small>${pkEsc(m.und||'')}</small></div></li>`;
+}
+function phMovs(){
+  if(ph.mode==='lote') return pkLogFor(ph.sku, ph.lote, ph.cont);
+  return pkLog.filter(m=>pkDia(m.fecha)===ph.day);
+}
+function renderHist(){
+  const sel=pk$('phDay'); pk$('phBack').hidden = !ph.from;
+  if(ph.mode==='lote'){
+    const all=pkLogFor(ph.sku, ph.lote, ph.cont), sku=pkSkuN(ph.sku), lote=String(ph.lote||'').trim();
+    // saldo actual del lote en la bodega y cantidad inicial (antes de la primera salida de cada pallet)
+    let saldo=0, pallets=new Set(), und=ph.und||'';
+    data.forEach((v,code)=>{ (v.items||[]).forEach(it=>{ if(pkSkuN(it.sku)===sku && (lote? String(it.lote||'').trim()===lote : it.cont===ph.cont)){ saldo=r3(saldo+pkNum(it.cant)); pallets.add(it.cont||code); und=it.und||und; } }); });
+    const primer=new Map(); all.forEach(m=>{ const k=m.cont||m.ubic; if(!primer.has(k)) primer.set(k,+m.antes||0); });
+    const conHist=new Set(primer.keys()); let inicial=[...primer.values()].reduce((a,b)=>a+b,0);
+    data.forEach((v,code)=>{ (v.items||[]).forEach(it=>{ if(pkSkuN(it.sku)===sku && (lote? String(it.lote||'').trim()===lote : it.cont===ph.cont) && !conHist.has(it.cont||code)) inicial+=pkNum(it.cant); }); });
+    const salido=all.reduce((a,m)=>a+(+m.cant||0),0), pct=inicial?Math.min(100,salido/inicial*100):0, agotado=saldo<=1e-6;
+    pk$('phTitle').textContent='Historial del lote';
+    pk$('phHead').innerHTML=`<div><b>${pkEsc(ph.desc||all[0]?.desc||'SKU '+sku)}</b></div>
+      <div class="ph-sub">SKU <b>${pkEsc(sku)}</b> · Lote <b>${pkEsc(lote||'—')}</b> · Vence <b>${pkEsc(fmtDate(ph.venc||all[0]?.venc))}</b>${lote?'':` · Contenedor <b>${pkEsc(ph.cont)}</b>`}</div>
+      <div class="ph-kpis"><div class="ph-kpi"><span>Cantidad inicial</span><b>${fmtQty(r3(inicial))}</b> ${pkEsc(und)}</div>
+        <div class="ph-kpi"><span>Salidas por picking</span><b>${fmtQty(r3(salido))}</b> ${pkEsc(und)}</div>
+        <div class="ph-kpi ${agotado?'ago':''}"><span>Saldo en bodega</span><b>${agotado?'Agotado':fmtQty(saldo)}</b> ${agotado?'':pkEsc(und)}</div>
+        <div class="ph-kpi"><span>Días con salidas</span><b>${new Set(all.map(m=>pkDia(m.fecha))).size}</b></div></div>
+      <div class="ph-bar" title="${Math.round(pct)}% usado"><span style="width:${pct}%"></span></div>
+      <div class="ph-sub">${Math.round(pct)}% del lote ya salió${agotado?' · <b style="color:var(--exp)">lote terminado</b>':` · quedan ${pallets.size} pallet${pallets.size!==1?'s':''} en bodega`}</div>`;
+    const days=[...new Set(all.map(m=>pkDia(m.fecha)))].sort().reverse();
+    sel.innerHTML=`<option value="">Todos los días (${all.length} salidas)</option>`+days.map(d=>{ const ms=all.filter(m=>pkDia(m.fecha)===d); return `<option value="${d}">${pkEsc(pkDiaTxt(d))} · ${ms.length} · ${pkEsc(pkSumUnd(ms))}</option>`; }).join('');
+    sel.value=days.includes(ph.day)?ph.day:'';
+    const ms=sel.value?all.filter(m=>pkDia(m.fecha)===sel.value):all;
+    const byDay=new Map(); [...ms].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))).forEach(m=>{ const d=pkDia(m.fecha); if(!byDay.has(d)) byDay.set(d,[]); byDay.get(d).push(m); });
+    pk$('phBody').innerHTML = ms.length ? [...byDay].map(([d,list])=>`<div class="ph-day-h">${pkEsc(pkDiaTxt(d))}<span>${list.length} salida${list.length>1?'s':''} · ${pkEsc(pkSumUnd(list))}</span></div><ul class="ph-list">${list.map(m=>phRow(m,false)).join('')}</ul>`).join('')
+      : '<div class="ph-empty">Este lote todavía no tiene salidas por picking registradas en este equipo.</div>';
+  } else {
+    const days=[...new Set(pkLog.map(m=>pkDia(m.fecha)))].sort().reverse();
+    if(!days.includes(ph.day)) days.unshift(ph.day);
+    sel.innerHTML=days.map(d=>{ const n=pkLog.filter(m=>pkDia(m.fecha)===d).length; return `<option value="${d}">${pkEsc(pkDiaTxt(d))} · ${n} salida${n!==1?'s':''}</option>`; }).join('');
+    sel.value=ph.day;
+    const ms=phMovs().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha)));
+    const docs=[...new Set(ms.map(m=>m.documento))], picks=[...new Set(ms.map(m=>m.pickingId))];
+    pk$('phTitle').textContent='Historial de picking';
+    pk$('phHead').innerHTML=`<div class="ph-sub"><b>${pkEsc(pkDiaTxt(ph.day))}</b> · ${ms.length} salida${ms.length!==1?'s':''} · ${new Set(ms.map(m=>m.cont)).size} pallets · ${new Set(ms.map(m=>m.sku)).size} productos${picks.length?` · picking ${pkEsc(picks.join(', '))}`:''}</div>
+      <div class="ph-chips">${docs.map(d=>{ const x=ms.filter(m=>m.documento===d); return `<span class="pk-bd"><i style="background:${x[0].color||'var(--empty)'}"></i>${pkEsc(d)} <small>${x.length} · ${pkEsc(pkSumUnd(x))}</small></span>`; }).join('')}</div>`;
+    pk$('phBody').innerHTML = ms.length ? docs.map(d=>{ const x=ms.filter(m=>m.documento===d);
+      return `<div class="ph-day-h"><span style="font:inherit;color:inherit"><span class="pk-dot" style="background:${x[0].color||'var(--empty)'}"></span>${pkEsc(d)}</span><span>${x.length} salida${x.length>1?'s':''}</span></div><ul class="ph-list">${x.map(m=>phRow(m,true)).join('')}</ul>`; }).join('')
+      : '<div class="ph-empty">No hay salidas de picking registradas este día en este equipo.</div>';
+  }
+}
+pk$('phDay').onchange=()=>{ ph.day=pk$('phDay').value || (ph.mode==='dia'?ph.day:''); renderHist(); };
+pk$('phBody').addEventListener('click',e=>{ const b=e.target.closest('[data-phlote]'); if(!b) return;
+  const m=pkLog.find(x=>pkSkuN(x.sku)===pkSkuN(b.dataset.phsku) && String(x.lote||'')===b.dataset.phlote);
+  ph={mode:'lote', sku:b.dataset.phsku, lote:b.dataset.phlote, cont:b.dataset.phcont, desc:m?.desc, venc:m?.venc, und:m?.und, day:'', from:{...ph}}; renderHist(); });
+pk$('phBack').onclick=()=>{ if(ph?.from){ ph=ph.from; renderHist(); } };
+pk$('phClose').onclick=()=>{ pk$('phModal').hidden=true; ph=null; };
+pk$('phModal').addEventListener('click',e=>{ if(e.target===pk$('phModal')){ pk$('phModal').hidden=true; ph=null; } });
+addEventListener('keydown',e=>{ if(e.key==='Escape' && !pk$('phModal').hidden){ pk$('phModal').hidden=true; ph=null; } });
+pk$('pkHist').onclick=()=>openHist({mode:'dia'});
+pk$('phXls').onclick=async ()=>{
+  if(typeof XLSX==='undefined'){ toast('No se pudo cargar el generador de Excel.'); return; }
+  const ms=(ph.mode==='lote' && pk$('phDay').value ? phMovs().filter(m=>pkDia(m.fecha)===pk$('phDay').value) : phMovs()).sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha)));
+  const rows=ms.map((m,n)=>({'N°':n+1,'Fecha y hora':new Date(m.fecha),'Picking':m.pickingId,'Documento':m.documento,'Área':m.area,'SKU pedido':m.skuPedido||m.sku,'SKU entregado':m.sku,
+    'Sustituto (equivalente)':m.sustituto?'SI':'NO','Descripción':m.desc,'Contenedor':m.cont,'Lote':m.lote,'Vencimiento':isoToDate(m.venc)||'','Ubicación':m.ubic,
+    'Cantidad pickeada':m.cant,'Unidad':m.und,'Bultos':m.bultos,'Stock pallet antes':m.antes,'Stock pallet después':m.despues,'Pallet agotado':m.agotado?'SI':'NO','FEFO':m.fefo,'Lectura':m.metodo==='QR'?'QR tarja':'Manual','Equipo':m.equipo}));
+  const H=['N°','Fecha y hora','Picking','Documento','Área','SKU pedido','SKU entregado','Sustituto (equivalente)','Descripción','Contenedor','Lote','Vencimiento','Ubicación','Cantidad pickeada','Unidad','Bultos','Stock pallet antes','Stock pallet después','Pallet agotado','FEFO','Lectura','Equipo'];
+  const wb=XLSX.utils.book_new(), ws=sheetFrom(rows.length?rows:[{'N°':'','Fecha y hora':'Sin movimientos'}],[5,17,24,14,18,10,10,10,38,13,14,12,14,10,8,8,11,11,9,10,10,12],H);
+  for(let r=1;r<=rows.length;r++){ const c=ws[XLSX.utils.encode_cell({r,c:1})]; if(c && c.t==='d') c.z='dd-mm-yyyy hh:mm'; }
+  XLSX.utils.book_append_sheet(wb, ws, 'Movimientos');
+  const name = ph.mode==='lote' ? `historial_lote_${pkSkuN(ph.sku)}_${String(ph.lote||ph.cont).replace(/[^A-Za-z0-9-]+/g,'-')}.xlsx` : `historial_picking_${ph.day}.xlsx`;
+  const out=XLSX.write(wb,{bookType:'xlsx',type:'array',cellDates:true});
+  if(await saveFile(name, new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}))) toast('Historial descargado');
+};
+
+/* ===================== BÚSQUEDA POR UBICACIÓN ===================== */
+// Acepta el código completo o parcial: A-F-01-2-2, F-01-2, F0122, P-05 …
+(function(){
+  const inp=document.getElementById('qUbi'), box=document.getElementById('ubiRes');
+  const clean=t=>String(t||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  let hits=[];
+  function buscar(){
+    const raw=inp.value.trim().toUpperCase(), q=clean(raw);
+    if(!q){ box.hidden=true; hits=[]; return; }
+    const qd=raw.replace(/\s+/g,'-').replace(/[^A-Z0-9-]/g,'');
+    hits=SLOTS.filter(sl=>{ const c=sl.code, cn=clean(c); return c.includes(qd) || cn.includes(q) || cn.slice(1).startsWith(q); })
+      .sort((a,b)=>(a.code===qd?-1:0)-(b.code===qd?-1:0) || (typeof pkRutaOrden==='function'?pkRutaOrden(a.code,b.code):a.code.localeCompare(b.code)));
+    const lista=hits.slice(0,60);
+    box.innerHTML = hits.length ? `<div class="h">${hits.length} ubicaci${hits.length===1?'ón':'ones'}${hits.length>60?' · mostrando 60':''}</div>`+lista.map(sl=>{
+      const its=data.get(sl.code)?.items||[], g=grupoDe(sl);
+      const txt = its.length ? its.map(it=>`${it.sku} ${it.desc} · ${fmtQty(it.cant)} ${it.und||''}${it.lote?' · lote '+it.lote:''}`).join(' | ') : 'Libre';
+      return `<button type="button" data-ubi="${sl.code}"><span class="c">${sl.code}</span><span class="z ${g}">${g}</span><span class="t ${its.length?'oc':''}"></span></button>`.replace('<span class="t '+(its.length?'oc':'')+'"></span>', `<span class="t ${its.length?'oc':''}">${txt.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}</span>`);
+    }).join('') : '<div class="h">No existe ninguna ubicación con ese código.</div>';
+    box.hidden=false;
+  }
+  function ir(code){
+    const sl=SLOT_BY_CODE.get(code); if(!sl) return;
+    box.hidden=true; inp.value=code;
+    try{ if(zoneFilter && grupoDe(sl)!==zoneFilter){ qZona.value=''; qZona.onchange(); } }catch(e){}
+    selectFila(sl.fila,true); openSlot(code);
+    toast(`Ubicación ${code}`);
+  }
+  let t; inp.addEventListener('input',()=>{ clearTimeout(t); t=setTimeout(buscar,120); });
+  inp.addEventListener('focus',()=>{ if(inp.value.trim()) buscar(); });
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){ e.preventDefault(); buscar(); const ex=hits.find(h=>h.code===inp.value.trim().toUpperCase()); if(ex) ir(ex.code); else if(hits.length===1) ir(hits[0].code); else if(!hits.length) toast('Esa ubicación no existe.'); }
+    if(e.key==='Escape'){ box.hidden=true; }
+  });
+  box.addEventListener('click',e=>{ const b=e.target.closest('[data-ubi]'); if(b) ir(b.dataset.ubi); });
+  document.addEventListener('click',e=>{ if(!e.target.closest('.find-ubi')) box.hidden=true; });
+})();
+pkUpdateCount();
+pkRefreshMap();
+try{ if(selected) renderDrawer(); }catch(e){}
 </script>
 
 <script>
